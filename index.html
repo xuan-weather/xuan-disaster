@@ -98,9 +98,38 @@ document.querySelectorAll('.module').forEach(el=>el.addEventListener('click',()=
  el.style.borderColor='var(--accent)';
  el.dataset.active='1';
  if(el.dataset.title==='地震監測'&&quakeLoaded){showQuakeList();map.setView([23.7,120.95],7);}
+ else if(el.dataset.title==='政府警報'){showGovernmentAlerts();}
  else if(el.dataset.title==='地震監測'){notice.innerHTML='<b>地震監測</b><br>正在讀取官方資料，請稍後再試。';}
  else{notice.innerHTML='<b>'+esc(el.dataset.title)+'</b><br>'+esc(el.dataset.desc)+'<br><br>此模組尚未接入官方資料，完成地震模組後將依序開發。';}
 }));
+
+async function showGovernmentAlerts(){
+ notice.innerHTML='<b>⚠️ 政府警報｜正在讀取中央氣象署資料</b>';
+ try{
+  const response=await fetch('./data/weather-alerts.json?v='+Date.now(),{cache:'no-store'});
+  if(!response.ok)throw new Error('HTTP '+response.status);
+  const data=await response.json();
+  const alerts=Array.isArray(data.alerts)?data.alerts:[];
+  const rows=alerts.map(a=>{
+   const raw=a.raw||{};
+   const all=[];
+   const visit=(v)=>{if(Array.isArray(v))v.forEach(visit);else if(v&&typeof v==='object')Object.entries(v).forEach(([k,x])=>{if(x!==null&&typeof x!=='object'&&String(x).trim())all.push([k,String(x)]);else visit(x);});};
+   visit(raw);
+   const pick=names=>{const n=names.map(x=>x.toLowerCase());const found=all.find(([k])=>n.includes(k.toLowerCase()));return found?found[1]:'';};
+   const title=pick(['phenomena','phenomenon','eventname','event','datasetdescription','title','headline','warning']);
+   const area=pick(['locationname','location','areadesc','countyname','county','townname','area']);
+   const start=pick(['starttime','issuetime','effectivetime','sent']);
+   const end=pick(['endtime','expires','validtime']);
+   const desc=pick(['description','content','headline','message','instruction']);
+   return {title:title||a.datasetName||'官方警特報',area,start,end,desc,raw};
+  });
+  statValues[2].textContent='官方警報';
+  notice.innerHTML='<b>⚠️ 政府警報｜中央氣象署</b><br>資料更新時間：'+esc(fmt(data.fetchedAt))+'<br><small>資料集：'+esc(data.datasets.map(x=>x.id).join('、'))+'</small><div style="display:grid;gap:9px;margin-top:12px">'+(rows.length?rows.map(a=>'<article style="padding:11px;border:1px solid #594a32;border-radius:10px;background:#211e18"><b style="color:#fbbf24">'+esc(a.title)+'</b>'+(a.area?'<br><span>'+esc(a.area)+'</span>':'')+(a.start?'<br><small>發布／開始：'+esc(a.start)+'</small>':'')+(a.end?'<br><small>結束／有效至：'+esc(a.end)+'</small>':'')+(a.desc?'<p style="margin:7px 0 0;white-space:pre-wrap">'+esc(a.desc)+'</p>':'')+'</article>').join(''):'<div>目前官方資料集沒有回傳警報項目。</div>')+'</div><p style="color:#91a5bc;font-size:10px">本區僅呈現中央氣象署資料，不代表所有政府機關警戒；請以官方公告為準。</p>';
+ }catch(error){
+  notice.innerHTML='<b>政府警報資料尚未載入</b><br>請確認 GitHub Actions 是否成功產生 data/weather-alerts.json。';
+ }
+}
+
 loadQuakes();
 setInterval(loadQuakes,5*60*1000);
 </script>
