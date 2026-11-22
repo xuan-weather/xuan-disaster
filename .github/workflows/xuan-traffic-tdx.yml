@@ -42,10 +42,11 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add data/traffic-city-Taichung.json
+          git add data/traffic-city-Taichung-geometry.json
 
           if git diff --cached --quiet; then
             echo "No data changes."
           else
-            git commit -m "chore: update TDX city traffic data"
+            git commit -m "chore: update TDX traffic and road geometry data"
             git push
           fi
