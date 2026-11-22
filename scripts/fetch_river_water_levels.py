@@ -5,10 +5,9 @@ from pathlib import Path
 
 import requests
 
-SOURCE_URL = (
-    "https://data.wra.gov.tw/Service/OpenData.aspx"
-    "?format=json&id=2D09DB8B-6A1B-485E-88B5-923A462F475C"
-)
+# Official WRA Open Data API resource linked from data.gov.tw dataset 25768.
+# The legacy data.wra.gov.tw host failed DNS resolution in GitHub Actions.
+SOURCE_URL = "https://opendata.wra.gov.tw/api/v2/73c4c3de-4045-4765-abeb-89f9f9cd5ff0?format=JSON"
 OUTPUT = Path("data/river-water-levels.json")
 TIMEOUT = 45
 
