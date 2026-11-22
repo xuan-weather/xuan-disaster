@@ -9,247 +9,179 @@ import requests
 
 CLIENT_ID = os.environ["TDX_CLIENT_ID"]
 CLIENT_SECRET = os.environ["TDX_CLIENT_SECRET"]
-
 BASE_URL = "https://tdx.transportdata.tw/api/basic/v2"
+TOKEN_URL = "https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token"
+GEOMETRY_URL = f"{BASE_URL}/Road/Link/Shape/Geometry/WKT"
 
-TOKEN_URL = (
-    "https://tdx.transportdata.tw/auth/realms/"
-    "TDXConnect/protocol/openid-connect/token"
-)
-
-TRAFFIC_URL = (
-    f"{BASE_URL}/Road/Traffic/Live/City/Taichung"
-)
-
-GEOMETRY_URL = (
-    f"{BASE_URL}/Road/Link/Shape/Geometry/WKT"
-)
-
-TRAFFIC_FILE = Path("data/traffic-city-Taichung.json")
-GEOMETRY_FILE = Path("data/traffic-city-Taichung-geometry.json")
+CITIES = [
+    ("Taipei", "臺北市"), ("NewTaipei", "新北市"), ("Keelung", "基隆市"),
+    ("Taoyuan", "桃園市"), ("Hsinchu", "新竹市"), ("HsinchuCounty", "新竹縣"),
+    ("MiaoliCounty", "苗栗縣"), ("Taichung", "臺中市"), ("ChanghuaCounty", "彰化縣"),
+    ("NantouCounty", "南投縣"), ("YunlinCounty", "雲林縣"), ("Chiayi", "嘉義市"),
+    ("ChiayiCounty", "嘉義縣"), ("Tainan", "臺南市"), ("Kaohsiung", "高雄市"),
+    ("PingtungCounty", "屏東縣"), ("YilanCounty", "宜蘭縣"), ("HualienCounty", "花蓮縣"),
+    ("TaitungCounty", "臺東縣"), ("PenghuCounty", "澎湖縣"),
+    ("KinmenCounty", "金門縣"), ("LienchiangCounty", "連江縣"),
+]
+TRAFFIC_FILE = Path("data/traffic-taiwan.json")
+GEOMETRY_FILE = Path("data/traffic-taiwan-geometry.json")
+PAGE_SIZE = 1000
+BATCH_SIZE = 100
 
 
 def get_token(session):
-    response = session.post(
+    r = session.post(
         TOKEN_URL,
-        data={
-            "grant_type": "client_credentials",
-            "client_id": CLIENT_ID,
-            "client_secret": CLIENT_SECRET,
-        },
-        headers={
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
+        data={"grant_type": "client_credentials", "client_id": CLIENT_ID, "client_secret": CLIENT_SECRET},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         timeout=30,
     )
-
-    response.raise_for_status()
-
-    token = response.json().get("access_token")
-
+    r.raise_for_status()
+    token = r.json().get("access_token")
     if not token:
         raise RuntimeError("TDX access token missing")
-
     return token
 
 
-def fetch_traffic(session, headers):
-    response = session.get(
-        TRAFFIC_URL,
-        params={
-            "$top": "200",
-            "$format": "JSON",
-        },
-        headers=headers,
-        timeout=45,
-    )
-
-    response.raise_for_status()
-    payload = response.json()
-
-    if not isinstance(payload, dict):
-        raise RuntimeError("Unexpected traffic response")
-
-    records = payload.get("LiveTraffics", [])
-
-    if not isinstance(records, list):
-        raise RuntimeError("LiveTraffics is not an array")
-
-    result = {
-        "success": True,
-        "source": "TDX",
-        "dataset": "City Live Traffic",
-        "city": "Taichung",
-        "fetchedAt": datetime.now(timezone.utc).isoformat(),
-        "officialUpdateTime": payload.get("UpdateTime"),
-        "updateInterval": payload.get("UpdateInterval"),
-        "count": len(records),
-        "records": records,
-    }
-
-    TRAFFIC_FILE.parent.mkdir(parents=True, exist_ok=True)
-
-    TRAFFIC_FILE.write_text(
-        json.dumps(result, ensure_ascii=False, separators=(",", ":")) + "\n",
-        encoding="utf-8",
-    )
-
-    print("Traffic records:", len(records))
-
-    return records
-
-
-def extract_link_ids(records):
-    link_ids = []
-
-    for record in records:
-        for item in record.get("LinkIDs", []):
-            if isinstance(item, dict):
-                link_id = item.get("LinkID")
-                if link_id:
-                    link_ids.append(str(link_id))
-
-    # 去除重複 LinkID，保留原順序
-    return list(dict.fromkeys(link_ids))
-
-
-def fetch_geometry(session, headers, link_ids):
-    result = {
-        "success": False,
-        "source": "TDX",
-        "dataset": "Road Link Geometry WKT",
-        "city": "Taichung",
-        "fetchedAt": datetime.now(timezone.utc).isoformat(),
-        "requestedLinkCount": len(link_ids),
-        "responseCount": 0,
-        "responses": [],
-    }
-
-    if not link_ids:
-        result["error"] = "No LinkIDs found in traffic records"
-        return result
-
-    # 分批查詢，避免單次請求過大
-    batches = [
-        link_ids[i:i + 100]
-        for i in range(0, len(link_ids), 100)
-    ]
-
-    print("Unique LinkIDs:", len(link_ids))
-    print("Geometry batches:", len(batches))
-
-    for index, batch in enumerate(batches, start=1):
-        print(
-            f"Fetching geometry batch {index}/{len(batches)} "
-            f"({len(batch)} LinkIDs)"
+def fetch_city(session, headers, code, name):
+    url = f"{BASE_URL}/Road/Traffic/Live/City/{code}"
+    records, update_time, interval, skip = [], None, None, 0
+    while True:
+        r = session.get(
+            url,
+            params={"$top": str(PAGE_SIZE), "$skip": str(skip), "$format": "JSON"},
+            headers=headers,
+            timeout=60,
         )
+        r.raise_for_status()
+        payload = r.json()
+        if isinstance(payload, dict):
+            page = payload.get("LiveTraffics", [])
+            update_time = payload.get("UpdateTime", update_time)
+            interval = payload.get("UpdateInterval", interval)
+        elif isinstance(payload, list):
+            page = payload
+        else:
+            raise RuntimeError(f"{name}: unexpected response type")
+        if not isinstance(page, list):
+            raise RuntimeError(f"{name}: LiveTraffics is not an array")
+        records.extend(page)
+        if len(page) < PAGE_SIZE:
+            break
+        skip += PAGE_SIZE
+        time.sleep(0.15)
+    return {
+        "city": code, "cityName": name, "officialUpdateTime": update_time,
+        "updateInterval": interval, "count": len(records), "records": records,
+    }
 
-        try:
-            response = session.post(
-                GEOMETRY_URL,
-                json=batch,
-                headers=headers,
-                timeout=60,
-            )
 
-            print("Geometry HTTP:", response.status_code)
-            response.raise_for_status()
+def collect_link_ids(cities):
+    ids = []
+    for city in cities:
+        for record in city["records"]:
+            for item in record.get("LinkIDs", []) or []:
+                if isinstance(item, dict) and item.get("LinkID"):
+                    ids.append(str(item["LinkID"]))
+    return list(dict.fromkeys(ids))
 
-            try:
-                payload = response.json()
-            except ValueError:
-                payload = {
-                    "rawText": response.text[:5000]
-                }
 
-            result["responses"].append({
-                "batch": index,
-                "requestedLinkIDs": batch,
-                "httpStatus": response.status_code,
-                "data": payload,
-            })
+def load_existing_geometry():
+    if not GEOMETRY_FILE.exists():
+        return {
+            "success": True, "source": "TDX", "dataset": "Taiwan Road Link Geometry WKT",
+            "fetchedAt": None, "requestedLinkCount": 0, "responseCount": 0,
+            "returnedGeometryCount": 0, "responses": [],
+        }
+    try:
+        data = json.loads(GEOMETRY_FILE.read_text(encoding="utf-8"))
+        if isinstance(data, dict) and isinstance(data.get("responses"), list):
+            return data
+    except Exception:
+        pass
+    return {
+        "success": True, "source": "TDX", "dataset": "Taiwan Road Link Geometry WKT",
+        "fetchedAt": None, "requestedLinkCount": 0, "responseCount": 0,
+        "returnedGeometryCount": 0, "responses": [],
+    }
 
-            result["responseCount"] += 1
 
-        except Exception as error:
-            print(
-                f"Geometry batch {index} failed: {error}",
-                file=sys.stderr,
-            )
+def fetch_missing_geometry(session, headers, link_ids, geometry):
+    known = set()
+    for batch in geometry.get("responses", []):
+        for item in batch.get("data", []) if isinstance(batch.get("data"), list) else []:
+            if item.get("LinkID"):
+                known.add(str(item["LinkID"]))
+    missing = [x for x in link_ids if x not in known]
+    print(f"Existing geometries: {len(known)}; new LinkIDs: {len(missing)}")
 
-            result["responses"].append({
-                "batch": index,
-                "requestedLinkIDs": batch,
-                "error": str(error),
-            })
+    batches = [missing[i:i + BATCH_SIZE] for i in range(0, len(missing), BATCH_SIZE)]
+    for n, batch in enumerate(batches, 1):
+        r = session.post(GEOMETRY_URL, json=batch, headers=headers, timeout=90)
+        r.raise_for_status()
+        payload = r.json()
+        if not isinstance(payload, list):
+            raise RuntimeError(f"Geometry batch {n} returned non-array JSON")
+        geometry["responses"].append({"batch": len(geometry["responses"]) + 1, "data": payload})
+        geometry["responseCount"] = len(geometry["responses"])
+        print(f"Geometry batch {n}/{len(batches)}: {len(payload)} returned")
+        if n < len(batches):
+            time.sleep(0.25)
 
-        if index < len(batches):
-            time.sleep(1)
-
-    successful = all(
-        "data" in item
-        for item in result["responses"]
+    geometry["success"] = True
+    geometry["fetchedAt"] = datetime.now(timezone.utc).isoformat()
+    geometry["requestedLinkCount"] = len(known.union(link_ids))
+    geometry["returnedGeometryCount"] = sum(
+        len(x.get("data", [])) for x in geometry["responses"] if isinstance(x.get("data"), list)
     )
-
-    result["success"] = successful
-
-    if not successful:
-        result["error"] = "One or more geometry batches failed"
-
-    return result
+    return geometry
 
 
 def main():
     session = requests.Session()
-
-    print("Requesting TDX token...")
     token = get_token(session)
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    cities, failures = [], []
 
-    print("TDX authentication successful.")
+    for code, name in CITIES:
+        try:
+            print(f"Fetching {name}...")
+            result = fetch_city(session, headers, code, name)
+            cities.append(result)
+            print(f"{name}: {result['count']} records")
+        except Exception as error:
+            print(f"WARNING {name}: {error}", file=sys.stderr)
+            failures.append({"city": code, "cityName": name, "error": str(error)})
 
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/json",
+    if not cities:
+        raise RuntimeError("All city traffic requests failed")
+
+    link_ids = collect_link_ids(cities)
+    traffic = {
+        "success": True, "source": "TDX", "dataset": "Taiwan City Live Traffic",
+        "fetchedAt": datetime.now(timezone.utc).isoformat(),
+        "cityCount": len(cities), "totalCityCount": len(CITIES),
+        "totalCount": sum(c["count"] for c in cities),
+        "uniqueLinkCount": len(link_ids), "failedCities": failures, "cities": cities,
     }
+    TRAFFIC_FILE.parent.mkdir(parents=True, exist_ok=True)
+    TRAFFIC_FILE.write_text(json.dumps(traffic, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
 
-    print("Fetching Taichung live traffic...")
-    records = fetch_traffic(session, headers)
+    geometry = load_existing_geometry()
+    geometry = fetch_missing_geometry(session, headers, link_ids, geometry)
+    GEOMETRY_FILE.write_text(json.dumps(geometry, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
 
-    print("Extracting road LinkIDs...")
-    link_ids = extract_link_ids(records)
-
-    print("Fetching real road geometry...")
-    geometry = fetch_geometry(
-        session,
-        headers,
-        link_ids,
-    )
-
-    GEOMETRY_FILE.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    GEOMETRY_FILE.write_text(
-        json.dumps(
-            geometry,
-            ensure_ascii=False,
-            separators=(",", ":"),
-        ) + "\n",
-        encoding="utf-8",
-    )
-
-    print("========== FINAL RESULT ==========")
-    print("Traffic records:", len(records))
-    print("Unique LinkIDs:", len(link_ids))
-    print("Geometry success:", geometry["success"])
-    print("Geometry responses:", geometry["responseCount"])
-    print("Geometry output:", GEOMETRY_FILE)
+    print("========== TAIWAN TRAFFIC RESULT ==========")
+    print(f"Cities successful: {len(cities)}/{len(CITIES)}")
+    print(f"Failed cities: {len(failures)}")
+    print(f"Traffic records: {traffic['totalCount']}")
+    print(f"Unique LinkIDs: {len(link_ids)}")
+    print(f"Road geometries cached: {geometry['returnedGeometryCount']}")
 
 
 if __name__ == "__main__":
     try:
         main()
-    except Exception as error:
-        print("TDX fetch failed:", error, file=sys.stderr)
+    except Exception as exc:
+        print(f"TDX fetch failed: {exc}", file=sys.stderr)
         raise
