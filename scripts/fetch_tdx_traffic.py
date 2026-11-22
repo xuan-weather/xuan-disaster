@@ -19,11 +19,50 @@ DATA_URL = (
     "Road/Traffic/Live/City/Taichung"
 )
 
+OUTPUT_FILE = Path("data/traffic-city-Taichung.json")
+
+
+def extract_records(payload):
+    """從常見的 TDX JSON 結構擷取資料。"""
+
+    if isinstance(payload, list):
+        return payload, "root-array"
+
+    if isinstance(payload, dict):
+        possible_keys = [
+            "value",
+            "Value",
+            "data",
+            "Data",
+            "records",
+            "Records",
+            "Traffic",
+            "traffic",
+        ]
+
+        for key in possible_keys:
+            value = payload.get(key)
+
+            if isinstance(value, list):
+                return value, f"field:{key}"
+
+        # 找出其他可能包含資料的陣列欄位
+        array_fields = [
+            key for key, value in payload.items()
+            if isinstance(value, list)
+        ]
+
+        return [], f"no-record-array; array-fields={array_fields}"
+
+    return [], f"unsupported-type:{type(payload).__name__}"
+
 
 def main():
-    print("Requesting TDX access token...")
+    session = requests.Session()
 
-    token_response = requests.post(
+    print("========== TDX AUTH ==========")
+
+    token_response = session.post(
         TOKEN_URL,
         data={
             "grant_type": "client_credentials",
@@ -31,18 +70,25 @@ def main():
             "client_secret": CLIENT_SECRET,
         },
         headers={
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Content-Type": "application/x-www-form-urlencoded",
         },
         timeout=30,
     )
 
+    print("TOKEN HTTP:", token_response.status_code)
     token_response.raise_for_status()
-    token = token_response.json()["access_token"]
+
+    token_data = token_response.json()
+    token = token_data.get("access_token")
+
+    if not token:
+        raise RuntimeError("TDX response did not contain access_token")
 
     print("TDX authentication successful.")
-    print("Fetching Taichung traffic data...")
 
-    response = requests.get(
+    print("========== TDX TRAFFIC ==========")
+
+    response = session.get(
         DATA_URL,
         params={
             "$top": "200",
@@ -55,24 +101,34 @@ def main():
         timeout=45,
     )
 
+    print("TRAFFIC HTTP:", response.status_code)
+    print("CONTENT TYPE:", response.headers.get("Content-Type"))
+    print("FINAL URL:", response.url)
+
     response.raise_for_status()
-    payload = response.json()
-    print("HTTP STATUS:", response.status_code)
-print("CONTENT TYPE:", response.headers.get("Content-Type"))
-print("RAW RESPONSE:", response.text[:1500])
-print("PAYLOAD TYPE:", type(payload).__name__)
 
-if isinstance(payload, dict):
-    print("PAYLOAD KEYS:", list(payload.keys()))
+    raw_text = response.text
 
-    if isinstance(payload, list):
-        records = payload
-    elif isinstance(payload, dict):
-        records = payload.get("value", [])
-        if not isinstance(records, list):
-            records = []
-    else:
-        records = []
+    print("RAW RESPONSE LENGTH:", len(raw_text))
+    print("RAW RESPONSE PREVIEW:")
+    print(raw_text[:3000])
+
+    try:
+        payload = response.json()
+    except ValueError as error:
+        raise RuntimeError(
+            "TDX response is not valid JSON"
+        ) from error
+
+    print("PAYLOAD TYPE:", type(payload).__name__)
+
+    if isinstance(payload, dict):
+        print("PAYLOAD KEYS:", list(payload.keys()))
+
+    records, extraction_method = extract_records(payload)
+
+    print("EXTRACTION METHOD:", extraction_method)
+    print("RECORD COUNT:", len(records))
 
     result = {
         "success": True,
@@ -80,14 +136,28 @@ if isinstance(payload, dict):
         "dataset": "City Live Traffic",
         "city": "Taichung",
         "fetchedAt": datetime.now(timezone.utc).isoformat(),
+        "httpStatus": response.status_code,
+        "payloadType": type(payload).__name__,
+        "extractionMethod": extraction_method,
         "count": len(records),
         "records": records,
     }
 
-    output = Path("data/traffic-city-Taichung.json")
-    output.parent.mkdir(parents=True, exist_ok=True)
+    # 沒有資料時保留診斷資訊，方便確認真正原因
+    if len(records) == 0:
+        result["diagnostic"] = {
+            "message": "TDX returned no records in recognized array fields",
+            "payloadPreview": (
+                json.dumps(
+                    payload,
+                    ensure_ascii=False,
+                )[:3000]
+            ),
+        }
 
-    output.write_text(
+    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+    OUTPUT_FILE.write_text(
         json.dumps(
             result,
             ensure_ascii=False,
@@ -96,13 +166,16 @@ if isinstance(payload, dict):
         encoding="utf-8",
     )
 
-    print(f"Success: saved {len(records)} records.")
-    print(f"Output: {output}")
+    print("========== RESULT ==========")
+    print("SUCCESS: JSON generated")
+    print("RECORDS:", len(records))
+    print("OUTPUT:", OUTPUT_FILE)
 
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as error:
-        print(f"TDX fetch failed: {error}", file=sys.stderr)
+        print("========== ERROR ==========")
+        print(str(error), file=sys.stderr)
         raise
