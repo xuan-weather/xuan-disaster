@@ -57,6 +57,13 @@ def main():
 
     response.raise_for_status()
     payload = response.json()
+    print("HTTP STATUS:", response.status_code)
+print("CONTENT TYPE:", response.headers.get("Content-Type"))
+print("RAW RESPONSE:", response.text[:1500])
+print("PAYLOAD TYPE:", type(payload).__name__)
+
+if isinstance(payload, dict):
+    print("PAYLOAD KEYS:", list(payload.keys()))
 
     if isinstance(payload, list):
         records = payload
