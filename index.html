@@ -24,14 +24,14 @@ footer{max-width:1440px;margin:auto;padding:0 28px 28px;color:#6f849b;font-size:
 </style>
 </head>
 <body>
-<header><div class="brand"><div class="logo">🛡️</div><div><b>Xuan Disaster</b><small>XUAN MONITORING NETWORK</small></div></div><div class="status"><i></i>展示模式｜資料介接待設定</div></header>
+<header><div class="brand"><div class="logo">🛡️</div><div><b>Xuan Disaster</b><small>XUAN MONITORING NETWORK</small></div></div><div class="status"><i></i>地震監測｜官方資料介接</div></header>
 <main>
-<section class="topline"><div><div class="eyebrow">DISASTER INTELLIGENCE</div><h1>台灣即時防災監測網</h1><p class="intro">整合地震、河川水位、淹水、土石流與政府防災警報的監測入口。</p></div><div class="demo">⚠ 示範介面｜非即時官方資料</div></section>
+<section class="topline"><div><div class="eyebrow">DISASTER INTELLIGENCE</div><h1>台灣即時防災監測網</h1><p class="intro">整合地震、河川水位、淹水、土石流與政府防災警報的監測入口。</p></div><div class="demo">地震資料載入後顯示｜其餘模組待介接</div></section>
 <section class="stats"><div class="stat"><span>監測模組</span><b>6</b><small></small></div>
-<div class="stat"><span>警戒狀態</span><b>示範</b><small></small></div>
-<div class="stat"><span>資料狀態</span><b>展示模式</b><small></small></div></section>
+<div class="stat"><span>警戒狀態</span><b>載入中</b><small></small></div>
+<div class="stat"><span>資料狀態</span><b>載入中</b><small></small></div></section>
 <section class="layout">
-<div class="panel"><div class="panel-head"><b>🗺️ 台灣防災監測總覽</b><small>台灣｜互動地圖</small></div><div id="map"></div><div class="mapfoot">地圖為互動式示意底圖；正式版將接入官方警戒與監測資料。</div></div>
+<div class="panel"><div class="panel-head"><b>🗺️ 台灣防災監測總覽</b><small>台灣｜互動地圖</small></div><div id="map"></div><div class="mapfoot">地圖顯示中央氣象署地震報告中的有效震央座標；其他防災圖層將逐步介接。</div></div>
 <div class="panel"><div class="panel-head"><b>監測功能</b><small>MONITORING MODULES</small></div><div class="modules"><button class="module" data-title="地震監測" data-desc="近期地震事件、規模與震度分布"><span class="mi">🌏</span><span><b>地震監測</b><small>近期地震事件、規模與震度分布</small></span><span class="arr">↗</span></button>
 <button class="module" data-title="河川水位" data-desc="河川水位站與警戒狀態"><span class="mi">🌊</span><span><b>河川水位</b><small>河川水位站與警戒狀態</small></span><span class="arr">↗</span></button>
 <button class="module" data-title="淹水警戒" data-desc="淹水感測與警戒區域"><span class="mi">🌧️</span><span><b>淹水警戒</b><small>淹水感測與警戒區域</small></span><span class="arr">↗</span></button>
@@ -40,13 +40,68 @@ footer{max-width:1440px;margin:auto;padding:0 28px 28px;color:#6f849b;font-size:
 <button class="module" data-title="避難資訊" data-desc="避難收容處所與位置查詢"><span class="mi">🏠</span><span><b>避難資訊</b><small>避難收容處所與位置查詢</small></span><span class="arr">↗</span></button></div><div class="notice" id="notice">選擇上方功能卡片，可查看此模組的功能說明。正式資料串接後將在此顯示最新觀測值與發布時間。</div></div>
 </section>
 </main>
-<footer><span>© 2026 Xuan Disaster · 台灣即時防災監測網</span><span>獨立專案｜GitHub Pages Ready</span></footer>
+<footer><span>© 2026 Xuan Disaster · 台灣即時防災監測網</span><span>資料來源：中央氣象署開放資料平台｜地震報告非即時預警</span></footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const map=L.map('map',{scrollWheelZoom:false}).setView([23.7,120.95],7);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap'}).addTo(map);
-const points=[{n:'北部示範點',p:[25.04,121.56]},{n:'中部示範點',p:[24.15,120.67]},{n:'南部示範點',p:[22.63,120.30]},{n:'東部示範點',p:[23.98,121.60]}];
-points.forEach((x,i)=>L.circleMarker(x.p,{radius:7,weight:2,color:'#f59e0b',fillColor:'#f59e0b',fillOpacity:.8}).addTo(map).bindPopup('<b>'+x.n+'</b><br>示範標記｜尚未連接官方資料'));
-document.querySelectorAll('.module').forEach(el=>el.addEventListener('click',()=>{document.querySelectorAll('.module').forEach(x=>x.style.borderColor='');el.style.borderColor='var(--accent)';document.getElementById('notice').innerHTML='<b>'+el.dataset.title+'</b><br>'+el.dataset.desc+'<br><br>目前為功能展示階段，正式版將加入官方資料來源、更新時間、篩選與詳細資訊。';}));
+const quakeLayer=L.layerGroup().addTo(map);
+const notice=document.getElementById('notice');
+const statusEl=document.querySelector('.status');
+const demoEl=document.querySelector('.demo');
+const mapFoot=document.querySelector('.mapfoot');
+const statValues=document.querySelectorAll('.stat b');
+let quakes=[];
+let quakeLoaded=false;
+const esc=v=>String(v??'未提供').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=v=>{if(!v)return '未提供';const d=new Date(v);return Number.isNaN(d.getTime())?String(v):d.toLocaleString('zh-TW',{hour12:false});};
+const magColor=m=>m>=5?'#f87171':m>=4?'#fb923c':m>=3?'#facc15':'#86efac';
+function showQuakeList(){
+ const rows=quakes.slice().sort((a,b)=>String(b.originTime||'').localeCompare(String(a.originTime||'')));
+ notice.innerHTML='<b>🌏 地震監測｜中央氣象署官方報告</b><br>目前取得 '+rows.length+' 筆地震報告。<br><small>資料擷取時間：'+esc(fmt(window.quakeFetchedAt))+'。氣象署地震報告需經人工確認，並非即時地震預警。</small><div style="display:grid;gap:9px;margin-top:12px">'+(rows.length?rows.slice(0,15).map(q=>'<article style="padding:10px;border:1px solid #344b62;border-radius:10px;background:#102237"><b style="color:'+magColor(Number(q.magnitude)||0)+'">M '+esc(q.magnitude??'未提供')+'</b>　'+esc(q.location||'震央位置未提供')+'<br><small style="color:#91a5bc">'+esc(fmt(q.originTime))+'｜深度 '+esc(q.depth??'未提供')+' km｜'+esc(q.eventType||'地震報告')+'</small></article>').join(''):'<div>目前資料集中沒有可顯示的地震報告。</div>')+'</div>';
+}
+function renderQuakes(){
+ quakeLayer.clearLayers();
+ const located=quakes.filter(q=>Number.isFinite(Number(q.latitude))&&Number.isFinite(Number(q.longitude)));
+ located.forEach(q=>{
+  const m=Number(q.magnitude)||0,c=magColor(m);
+  L.circleMarker([Number(q.latitude),Number(q.longitude)],{radius:Math.max(6,Math.min(16,5+m*2)),weight:2,color:c,fillColor:c,fillOpacity:.85})
+   .addTo(quakeLayer)
+   .bindPopup('<b>'+esc(q.location||'震央位置未提供')+'</b><br>規模：M '+esc(q.magnitude??'未提供')+'<br>深度：'+esc(q.depth??'未提供')+' km<br>時間：'+esc(fmt(q.originTime))+'<br><a href="'+esc(q.reportUrl||'https://www.cwa.gov.tw/V8/C/E/index.html')+'" target="_blank" rel="noopener">中央氣象署地震報告</a>');
+ });
+ mapFoot.textContent='地圖顯示 '+located.length+' 筆具有有效座標的官方地震報告；擷取時間：'+fmt(window.quakeFetchedAt)+'。';
+}
+async function loadQuakes(){
+ try{
+  const response=await fetch('./data/earthquakes.json?v='+Date.now(),{cache:'no-store'});
+  if(!response.ok)throw new Error('HTTP '+response.status);
+  const data=await response.json();
+  if(!Array.isArray(data.earthquakes))throw new Error('資料格式不符');
+  quakes=data.earthquakes;
+  window.quakeFetchedAt=data.fetchedAt;
+  quakeLoaded=true;
+  statusEl.innerHTML='<i></i>地震資料已載入';
+  demoEl.textContent='地震資料已介接｜其他模組待介接';
+  statValues[1].textContent=String(quakes.length);
+  statValues[2].textContent='官方報告';
+  renderQuakes();
+  const active=document.querySelector('.module[data-title="地震監測"]');
+  if(active&&active.dataset.active==='1')showQuakeList();
+ }catch(error){
+  statusEl.innerHTML='<i style="background:#f87171"></i>地震資料待更新';
+  statValues[2].textContent='待更新';
+  mapFoot.textContent='尚未取得可用的官方地震資料。請確認 CWA_API_KEY 與 GitHub Actions 執行結果；不顯示示範震央。';
+ }
+}
+document.querySelectorAll('.module').forEach(el=>el.addEventListener('click',()=>{
+ document.querySelectorAll('.module').forEach(x=>{x.style.borderColor='';x.dataset.active='0';});
+ el.style.borderColor='var(--accent)';
+ el.dataset.active='1';
+ if(el.dataset.title==='地震監測'&&quakeLoaded){showQuakeList();map.setView([23.7,120.95],7);}
+ else if(el.dataset.title==='地震監測'){notice.innerHTML='<b>地震監測</b><br>正在讀取官方資料，請稍後再試。';}
+ else{notice.innerHTML='<b>'+esc(el.dataset.title)+'</b><br>'+esc(el.dataset.desc)+'<br><br>此模組尚未接入官方資料，完成地震模組後將依序開發。';}
+}));
+loadQuakes();
+setInterval(loadQuakes,5*60*1000);
 </script>
 </body></html>
