@@ -26,7 +26,9 @@ CITIES = [
 TRAFFIC_FILE = Path("data/traffic-taiwan.json")
 GEOMETRY_FILE = Path("data/traffic-taiwan-geometry.json")
 PAGE_SIZE = 1000
-BATCH_SIZE = 100
+BATCH_SIZE = 20
+MAX_GEOMETRY_RETRIES = 6
+
 
 
 def get_token(session):
@@ -109,31 +111,113 @@ def load_existing_geometry():
 def fetch_missing_geometry(session, headers, link_ids, geometry):
     known = set()
     for batch in geometry.get("responses", []):
-        for item in batch.get("data", []) if isinstance(batch.get("data"), list) else []:
-            if item.get("LinkID"):
-                known.add(str(item["LinkID"]))
+        data = batch.get("data")
+        if isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict) and item.get("LinkID"):
+                    known.add(str(item["LinkID"]))
+
     missing = [x for x in link_ids if x not in known]
     print(f"Existing geometries: {len(known)}; new LinkIDs: {len(missing)}")
 
     batches = [missing[i:i + BATCH_SIZE] for i in range(0, len(missing), BATCH_SIZE)]
+    failed_batches = []
+
     for n, batch in enumerate(batches, 1):
-        r = session.post(GEOMETRY_URL, json=batch, headers=headers, timeout=90)
-        r.raise_for_status()
-        payload = r.json()
-        if not isinstance(payload, list):
-            raise RuntimeError(f"Geometry batch {n} returned non-array JSON")
-        geometry["responses"].append({"batch": len(geometry["responses"]) + 1, "data": payload})
-        geometry["responseCount"] = len(geometry["responses"])
-        print(f"Geometry batch {n}/{len(batches)}: {len(payload)} returned")
-        if n < len(batches):
-            time.sleep(0.25)
+        succeeded = False
+
+        for attempt in range(1, MAX_GEOMETRY_RETRIES + 1):
+            try:
+                response = session.post(
+                    GEOMETRY_URL,
+                    json=batch,
+                    headers=headers,
+                    timeout=90,
+                )
+
+                if response.status_code == 429:
+                    retry_after = response.headers.get("Retry-After")
+                    try:
+                        wait_seconds = float(retry_after) if retry_after else min(15 * attempt, 90)
+                    except (TypeError, ValueError):
+                        wait_seconds = min(15 * attempt, 90)
+
+                    print(
+                        f"Geometry rate limited (429), batch {n}/{len(batches)}, "
+                        f"attempt {attempt}/{MAX_GEOMETRY_RETRIES}; "
+                        f"waiting {wait_seconds:.0f}s"
+                    )
+                    time.sleep(wait_seconds)
+                    continue
+
+                response.raise_for_status()
+                payload = response.json()
+
+                if not isinstance(payload, list):
+                    raise RuntimeError(f"Geometry batch {n} returned non-array JSON")
+
+                geometry["responses"].append({
+                    "batch": len(geometry["responses"]) + 1,
+                    "data": payload,
+                })
+                succeeded = True
+                print(f"Geometry batch {n}/{len(batches)}: {len(payload)} returned")
+                break
+
+            except requests.exceptions.HTTPError as error:
+                status = getattr(error.response, "status_code", None)
+                if status == 429:
+                    # Defensive fallback in case raise_for_status is reached.
+                    wait_seconds = min(15 * attempt, 90)
+                    print(f"HTTP 429; waiting {wait_seconds}s before retry")
+                    time.sleep(wait_seconds)
+                    continue
+
+                print(f"Geometry batch {n} failed with HTTP error: {error}", file=sys.stderr)
+                break
+
+            except Exception as error:
+                wait_seconds = min(5 * attempt, 30)
+                print(
+                    f"Geometry batch {n} attempt {attempt} failed: {error}; "
+                    f"waiting {wait_seconds}s",
+                    file=sys.stderr,
+                )
+                if attempt < MAX_GEOMETRY_RETRIES:
+                    time.sleep(wait_seconds)
+
+        if not succeeded:
+            failed_batches.append({
+                "requestedLinkIDs": batch,
+                "error": "Rate limited or request failed after retries",
+            })
+            print(
+                f"WARNING: geometry batch {n}/{len(batches)} deferred; "
+                "it will be retried on the next scheduled run.",
+                file=sys.stderr,
+            )
+
+        # Keep a pause between requests to reduce pressure on TDX.
+        time.sleep(3)
 
     geometry["success"] = True
     geometry["fetchedAt"] = datetime.now(timezone.utc).isoformat()
-    geometry["requestedLinkCount"] = len(known.union(link_ids))
+    geometry["requestedLinkCount"] = len(set(known).union(link_ids))
     geometry["returnedGeometryCount"] = sum(
-        len(x.get("data", [])) for x in geometry["responses"] if isinstance(x.get("data"), list)
+        len(x.get("data", []))
+        for x in geometry["responses"]
+        if isinstance(x.get("data"), list)
     )
+    geometry["pendingLinkCount"] = max(
+        0, len(set(link_ids) - known) -
+        sum(
+            len(x.get("data", []))
+            for x in geometry["responses"][-len(batches):]
+            if isinstance(x.get("data"), list)
+        )
+    ) if batches else 0
+    geometry["deferredBatchCount"] = len(failed_batches)
+    geometry["deferredBatches"] = failed_batches[-20:]
     return geometry
 
 
@@ -168,8 +252,18 @@ def main():
     TRAFFIC_FILE.write_text(json.dumps(traffic, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
 
     geometry = load_existing_geometry()
-    geometry = fetch_missing_geometry(session, headers, link_ids, geometry)
-    GEOMETRY_FILE.write_text(json.dumps(geometry, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    try:
+        geometry = fetch_missing_geometry(session, headers, link_ids, geometry)
+    except Exception as error:
+        print(f"WARNING: geometry update incomplete; keeping existing geometry: {error}", file=sys.stderr)
+        geometry["success"] = True
+        geometry["lastError"] = str(error)
+        geometry["fetchedAt"] = datetime.now(timezone.utc).isoformat()
+
+    GEOMETRY_FILE.write_text(
+        json.dumps(geometry, ensure_ascii=False, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+    )
 
     print("========== TAIWAN TRAFFIC RESULT ==========")
     print(f"Cities successful: {len(cities)}/{len(CITIES)}")
