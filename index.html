@@ -99,9 +99,27 @@ document.querySelectorAll('.module').forEach(el=>el.addEventListener('click',()=
  el.dataset.active='1';
  if(el.dataset.title==='地震監測'&&quakeLoaded){showQuakeList();map.setView([23.7,120.95],7);}
  else if(el.dataset.title==='政府警報'){showGovernmentAlerts();}
+ else if(el.dataset.title==='河川水位'){showRiverLevels();}
  else if(el.dataset.title==='地震監測'){notice.innerHTML='<b>地震監測</b><br>正在讀取官方資料，請稍後再試。';}
  else{notice.innerHTML='<b>'+esc(el.dataset.title)+'</b><br>'+esc(el.dataset.desc)+'<br><br>此模組尚未接入官方資料，完成地震模組後將依序開發。';}
 }));
+
+
+async function showRiverLevels(){
+ notice.innerHTML='<b>🌊 河川水位｜正在讀取經濟部水利署資料</b>';
+ try{
+  const response=await fetch('./data/river-water-levels.json?v='+Date.now(),{cache:'no-store'});
+  if(!response.ok)throw new Error('HTTP '+response.status);
+  const data=await response.json();
+  const rows=Array.isArray(data.stations)?data.stations:[];
+  const valid=rows.filter(x=>x.waterLevel!==null&&Number.isFinite(Number(x.waterLevel)));
+  const sorted=valid.slice().sort((a,b)=>Number(b.waterLevel)-Number(a.waterLevel));
+  notice.innerHTML='<b>🌊 河川水位｜經濟部水利署</b><br>資料更新時間：'+esc(fmt(data.fetchedAt))+'<br><small>來源觀測時間約每 10 分鐘一筆；原始資料未必完成品管，請留意資料時間與品質註記。</small><div style="display:grid;gap:8px;margin-top:12px">'+(sorted.length?sorted.slice(0,30).map(x=>'<article style="padding:10px;border:1px solid #344b62;border-radius:10px;background:#102237"><b>'+esc(x.stationName||x.stationId||'水位站')+'</b><br><span style="font-size:20px;color:#7dd3fc;font-weight:700">'+esc(Number(x.waterLevel).toFixed(2))+' m</span><br><small>'+esc(x.location||'')+(x.observedAt?'｜觀測：'+esc(x.observedAt):'')+(x.quality?'｜註記：'+esc(x.quality):'')+'</small></article>').join(''):'<div>目前沒有可顯示的有效水位觀測值。</div>')+'</div><p style="color:#91a5bc;font-size:10px">本頁呈現水利署即時原始觀測值，不等同洪水警戒或淹水預報；是否達警戒需以主管機關公告為準。</p>';
+  statValues[2].textContent=valid.length+' 站水位';
+ }catch(error){
+  notice.innerHTML='<b>河川水位資料尚未載入</b><br>請確認 GitHub Actions 是否成功產生 data/river-water-levels.json。';
+ }
+}
 
 async function showGovernmentAlerts(){
  notice.innerHTML='<b>⚠️ 政府警報｜正在讀取中央氣象署資料</b>';
