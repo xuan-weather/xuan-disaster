@@ -100,10 +100,26 @@ document.querySelectorAll('.module').forEach(el=>el.addEventListener('click',()=
  if(el.dataset.title==='地震監測'&&quakeLoaded){showQuakeList();map.setView([23.7,120.95],7);}
  else if(el.dataset.title==='政府警報'){showGovernmentAlerts();}
  else if(el.dataset.title==='河川水位'){showRiverLevels();}
+ else if(el.dataset.title==='淹水警戒'){showFloodWarnings();}
  else if(el.dataset.title==='地震監測'){notice.innerHTML='<b>地震監測</b><br>正在讀取官方資料，請稍後再試。';}
  else{notice.innerHTML='<b>'+esc(el.dataset.title)+'</b><br>'+esc(el.dataset.desc)+'<br><br>此模組尚未接入官方資料，完成地震模組後將依序開發。';}
 }));
 
+
+
+async function showFloodWarnings(){
+ notice.innerHTML='<b>🌧️ 淹水警戒｜正在讀取水利署防災資訊</b>';
+ try{
+  const response=await fetch('./data/flood-warnings.json?v='+Date.now(),{cache:'no-store'});
+  if(!response.ok)throw new Error('HTTP '+response.status);
+  const data=await response.json();
+  const rows=Array.isArray(data.events)?data.events:[];
+  notice.innerHTML='<b>🌧️ 淹水警戒｜經濟部水利署防災資訊</b><br>資料更新時間：'+esc(fmt(data.fetchedAt))+'<br><small>資料來源：水利署防災資訊服務淹水災情資料。這是已通報災情，不等同未來淹水預報。</small><div style="display:grid;gap:9px;margin-top:12px">'+(rows.length?rows.map(x=>'<article style="padding:11px;border:1px solid #594a32;border-radius:10px;background:#211e18"><b style="color:#fbbf24">'+esc(x.city||'縣市未提供')+'｜'+esc(x.place||'地點未提供')+'</b><br><span>'+esc(x.description||'淹水災情通報')+'</span><br><small>通報時間：'+esc(x.time||'未提供')+'｜來源：'+esc(x.source||'未提供')+'</small>'+(x.status?'<br><small>狀態：'+esc(x.status)+'</small>':'')+'</article>').join(''):'<div>目前資料中沒有回傳淹水災情事件。這不代表未來沒有淹水風險，請留意即時降雨及官方警戒。</div>')+'</div><p style="color:#91a5bc;font-size:10px">若遇積淹水或危險情況，請依地方政府及消防單位指示避難。</p>';
+  statValues[2].textContent=rows.length+' 筆災情';
+ }catch(error){
+  notice.innerHTML='<b>淹水警戒資料尚未載入</b><br>請確認 GitHub Actions 是否成功產生 data/flood-warnings.json。';
+ }
+}
 
 async function showRiverLevels(){
  notice.innerHTML='<b>🌊 河川水位｜正在讀取經濟部水利署資料</b>';
