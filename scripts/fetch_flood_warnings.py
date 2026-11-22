@@ -33,6 +33,21 @@ def main():
         headers={"Accept": "application/json", "User-Agent": "Xuan-Disaster/1.0"},
         timeout=TIMEOUT,
     )
+    if response.status_code == 401:
+        OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+        result = {
+            "success": False,
+            "status": "api_key_required",
+            "source": "經濟部水利署防災資訊服務",
+            "sourceUrl": API_URL,
+            "fetchedAt": datetime.now(timezone.utc).isoformat(),
+            "eventCount": 0,
+            "events": [],
+            "message": "水利署 FHY 防災 API 需要申請專用 API 金鑰；目前未取得授權，因此無法讀取即時淹水災情。",
+        }
+        OUTPUT.write_text(json.dumps(result, ensure_ascii=False, separators=(",", ":")) + "\\n", encoding="utf-8")
+        print("FHY API requires an API key (HTTP 401). Wrote an explicit unavailable status; workflow can continue.")
+        return
     response.raise_for_status()
     payload = response.json()
     if not isinstance(payload, dict):

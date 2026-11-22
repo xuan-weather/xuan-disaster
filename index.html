@@ -114,6 +114,10 @@ async function showFloodWarnings(){
   if(!response.ok)throw new Error('HTTP '+response.status);
   const data=await response.json();
   const rows=Array.isArray(data.events)?data.events:[];
+  if(data.status==='api_key_required'){
+   notice.innerHTML='<b>🌧️ 淹水災情資料暫不可用</b><br>水利署 FHY 防災 API 需要專用 API 金鑰，目前尚未取得授權。此狀態不代表沒有淹水災情。<br><small>可申請 API 金鑰後再接通；目前先保留其他模組正常更新。</small>';
+   return;
+  }
   notice.innerHTML='<b>🌧️ 淹水警戒｜經濟部水利署防災資訊</b><br>資料更新時間：'+esc(fmt(data.fetchedAt))+'<br><small>資料來源：水利署防災資訊服務淹水災情資料。這是已通報災情，不等同未來淹水預報。</small><div style="display:grid;gap:9px;margin-top:12px">'+(rows.length?rows.map(x=>'<article style="padding:11px;border:1px solid #594a32;border-radius:10px;background:#211e18"><b style="color:#fbbf24">'+esc(x.city||'縣市未提供')+'｜'+esc(x.place||'地點未提供')+'</b><br><span>'+esc(x.description||'淹水災情通報')+'</span><br><small>通報時間：'+esc(x.time||'未提供')+'｜來源：'+esc(x.source||'未提供')+'</small>'+(x.status?'<br><small>狀態：'+esc(x.status)+'</small>':'')+'</article>').join(''):'<div>目前資料中沒有回傳淹水災情事件。這不代表未來沒有淹水風險，請留意即時降雨及官方警戒。</div>')+'</div><p style="color:#91a5bc;font-size:10px">若遇積淹水或危險情況，請依地方政府及消防單位指示避難。</p>';
   statValues[2].textContent=rows.length+' 筆災情';
  }catch(error){
