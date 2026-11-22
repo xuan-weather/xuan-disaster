@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#081321">
+<title>Xuan Traffic｜台灣即時交通監測網</title>
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--bg:#071321;--panel:#101f31;--panel2:#14263a;--line:#263b52;--text:#edf5ff;--muted:#91a5bc;--accent:#38bdf8;--accent2:#a78bfa}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 70% -10%,color-mix(in srgb,var(--accent) 18%,transparent),transparent 40%),var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Segoe UI",sans-serif}
+header{height:76px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:#091827dd;position:sticky;top:0;z-index:10;backdrop-filter:blur(16px)}
+.brand{display:flex;align-items:center;gap:13px}.logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(145deg,var(--accent),var(--accent2));display:grid;place-items:center;font-size:24px;box-shadow:0 8px 28px color-mix(in srgb,var(--accent) 25%,transparent)}.brand b{font-size:18px;letter-spacing:.2px}.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:2px;margin-top:3px}
+.status{border:1px solid #2c7759;background:#103526;color:#86e0b2;border-radius:999px;padding:8px 12px;font-size:12px}.status i{display:inline-block;width:7px;height:7px;background:#45d68b;border-radius:50%;margin-right:7px;box-shadow:0 0 12px #45d68b}
+main{max-width:1440px;margin:auto;padding:30px 28px 60px}.eyebrow{color:var(--accent);font-size:11px;font-weight:800;letter-spacing:3px}h1{font-size:clamp(30px,5vw,48px);margin:10px 0 8px;letter-spacing:-1px}.intro{color:var(--muted);font-size:15px;margin:0;line-height:1.7}
+.topline{display:flex;justify-content:space-between;align-items:end;gap:18px;margin-bottom:24px;flex-wrap:wrap}.demo{font-size:11px;color:#f5ca83;border:1px solid #765c32;background:#302615;padding:8px 11px;border-radius:9px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:22px 0}.stat{background:linear-gradient(145deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:16px;padding:17px 19px}.stat span,.stat small{display:block;color:var(--muted);font-size:12px}.stat b{display:block;font-size:24px;margin:7px 0 2px}
+.layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,.85fr);gap:16px}.panel{background:linear-gradient(150deg,#14263a,#0d1b2b);border:1px solid var(--line);border-radius:19px;overflow:hidden;box-shadow:0 14px 40px #0002}.panel-head{display:flex;justify-content:space-between;align-items:center;padding:17px 19px;border-bottom:1px solid var(--line)}.panel-head b{font-size:15px}.panel-head small{color:var(--muted);font-size:11px}#map{height:430px;background:#12243a}.mapfoot{padding:11px 16px;color:var(--muted);font-size:11px;border-top:1px solid var(--line);line-height:1.6}
+.modules{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:14px}.module{border:1px solid #2a4057;background:#14263a;color:var(--text);border-radius:13px;padding:13px 12px;display:flex;align-items:center;text-align:left;gap:10px;cursor:pointer;min-height:74px;transition:.18s}.module:hover{border-color:var(--accent);transform:translateY(-2px);background:#1a3048}.mi{font-size:22px;width:31px;text-align:center}.module b{display:block;font-size:13px}.module small{display:block;color:var(--muted);font-size:10px;margin-top:4px;line-height:1.4}.arr{margin-left:auto;color:var(--accent)}.notice{margin:0 14px 14px;border:1px solid #3a4e62;background:#0b1a29;border-radius:12px;padding:12px;color:#9db1c6;font-size:11px;line-height:1.6}
+footer{max-width:1440px;margin:auto;padding:0 28px 28px;color:#6f849b;font-size:11px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.leaflet-container{font:inherit}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#102237;color:#eef6ff}.leaflet-popup-content{font-size:12px}
+@media(max-width:850px){main{padding:23px 16px 42px}header{padding:0 16px}.layout{grid-template-columns:1fr}#map{height:360px}}
+@media(max-width:480px){.brand b{font-size:15px}.brand small{font-size:8px}.status{font-size:10px;padding:7px 9px}.stats{gap:8px}.stat{padding:13px 11px}.stat b{font-size:19px}.modules{grid-template-columns:1fr}#map{height:330px}}
+.live-panel{margin-top:16px;padding-bottom:14px}.live-toolbar{display:flex;align-items:end;gap:10px;flex-wrap:wrap;padding:14px 16px}.live-toolbar label{display:grid;gap:5px;color:var(--muted);font-size:11px}.live-toolbar select,.live-toolbar button{min-height:38px;border:1px solid #38516b;border-radius:9px;background:#14263a;color:var(--text);padding:8px 12px;font:inherit}.live-toolbar button{cursor:pointer;background:#16476a}.connection{font-size:11px;color:var(--muted);margin-left:auto}.traffic-tabs{display:flex;gap:7px;overflow-x:auto;padding:0 16px 12px}.traffic-tab{white-space:nowrap;border:1px solid #30475f;border-radius:999px;padding:8px 13px;background:#122338;color:#a9bdd1;cursor:pointer}.traffic-tab.active{background:#12466a;border-color:#38bdf8;color:#eaf8ff}.traffic-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:0 16px 12px}.traffic-metric{border:1px solid #2a4057;border-radius:11px;background:#0d1b2b;padding:11px}.traffic-metric span{display:block;color:var(--muted);font-size:10px}.traffic-metric b{display:block;margin-top:5px;font-size:14px;overflow-wrap:anywhere}.traffic-results{margin:0 16px;padding:12px;border:1px solid #2a4057;border-radius:12px;background:#0b1a29;color:#dbeafe;font-size:12px;line-height:1.6;min-height:80px;overflow:auto}.traffic-table{width:100%;border-collapse:collapse;min-width:520px}.traffic-table td,.traffic-table th{padding:8px;border-bottom:1px solid #263b52;text-align:left;vertical-align:top}.traffic-table th{color:#8fcdf0}.traffic-note{padding:10px 16px 0;color:var(--muted);font-size:10px;line-height:1.6}
+.traffic-legend{background:#102237ed;color:#eef6ff;border:1px solid #38516b;border-radius:10px;padding:9px 11px;font-size:11px;line-height:1.8;box-shadow:0 3px 14px #0005}.traffic-legend b{display:block;margin-bottom:3px}.traffic-legend span{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+@media(max-width:480px){.traffic-summary{gap:6px;padding-left:12px;padding-right:12px}.traffic-metric{padding:9px}.traffic-results{margin:0 12px;padding:9px}.live-toolbar{padding:12px}.connection{width:100%;margin-left:0}}
+</style>
+</head>
+<body>
+<header><div class="brand"><div class="logo">🚦</div><div><b>Xuan Traffic</b><small>XUAN MONITORING NETWORK</small></div></div><div class="status"><i></i>TDX 即時資料｜GitHub Pages</div></header>
+<main>
+<section class="topline"><div><div class="eyebrow">TRAFFIC INTELLIGENCE</div><h1>台灣即時交通監測網</h1><p class="intro">掌握國道、省道、市區路況、事故事件與公共運輸資訊。</p></div><div class="demo">TDX 官方資料介接版</div></section>
+<section class="stats"><div class="stat"><span>監測模組</span><b>6</b><small>國道・事件・影像・公車・台鐵・高鐵</small></div><div class="stat"><span>交通事件</span><b id="eventCount">--</b><small>依官方事件資料回傳</small></div><div class="stat"><span>資料狀態</span><b id="topDataStatus">載入中</b><small>TDX / GitHub Pages</small></div></section>
+<section class="layout">
+<div class="panel"><div class="panel-head"><b>🗺️ 台灣交通監測總覽</b><small>臺中市即時道路壅塞</small></div><div id="map"></div><div class="mapfoot" id="mapfoot">正在載入 GitHub Pages 的 TDX 路況及道路幾何資料…</div></div>
+<div class="panel"><div class="panel-head"><b>監測功能</b><small>MONITORING MODULES</small></div><div class="modules">
+<button class="module" data-title="國道路況" data-desc="高速公路即時路況與壅塞資訊"><span class="mi">🛣️</span><span><b>國道路況</b><small>高速公路即時路況與壅塞資訊</small></span><span class="arr">↗</span></button>
+<button class="module" data-title="道路事件" data-desc="事故、施工、封閉與管制"><span class="mi">🚧</span><span><b>道路事件</b><small>事故、施工、封閉與管制</small></span><span class="arr">↗</span></button>
+<button class="module" data-title="即時影像" data-desc="道路與交通攝影機入口"><span class="mi">📹</span><span><b>即時影像</b><small>道路與交通攝影機入口</small></span><span class="arr">↗</span></button>
+<button class="module" data-title="公車動態" data-desc="公車路線、站牌與到站資訊"><span class="mi">🚌</span><span><b>公車動態</b><small>公車路線、站牌與到站資訊</small></span><span class="arr">↗</span></button>
+<button class="module" data-title="台鐵資訊" data-desc="列車運行與車站資訊"><span class="mi">🚆</span><span><b>台鐵資訊</b><small>列車運行與車站資訊</small></span><span class="arr">↗</span></button>
+<button class="module" data-title="高鐵資訊" data-desc="班次與運行資訊入口"><span class="mi">🚄</span><span><b>高鐵資訊</b><small>班次與運行資訊入口</small></span><span class="arr">↗</span></button>
+</div><div class="notice" id="notice">選擇上方功能卡片，可查看此模組的功能說明。其餘模組入口保留，後續再擴充官方資料。</div></div>
+</section>
+<section class="panel live-panel">
+<div class="panel-head"><b>🚦 即時交通資料</b><small id="lastUpdated">等待資料載入</small></div>
+<div class="live-toolbar"><label>縣市<select id="citySelect"><option value="ALL">全台灣（22縣市）</option><option value="Taichung">臺中市</option><option value="Taipei">臺北市</option><option value="NewTaipei">新北市</option><option value="Taoyuan">桃園市</option><option value="Hsinchu">新竹市</option><option value="HsinchuCounty">新竹縣</option><option value="MiaoliCounty">苗栗縣</option><option value="ChanghuaCounty">彰化縣</option><option value="NantouCounty">南投縣</option><option value="YunlinCounty">雲林縣</option><option value="Chiayi">嘉義市</option><option value="ChiayiCounty">嘉義縣</option><option value="Tainan">臺南市</option><option value="Kaohsiung">高雄市</option><option value="PingtungCounty">屏東縣</option><option value="YilanCounty">宜蘭縣</option><option value="HualienCounty">花蓮縣</option><option value="TaitungCounty">臺東縣</option><option value="Keelung">基隆市</option><option value="PenghuCounty">澎湖縣</option><option value="KinmenCounty">金門縣</option><option value="LienchiangCounty">連江縣</option></select></label><button id="refreshBtn" type="button">↻ 立即更新</button><span id="connectionStatus" class="connection">連線準備中</span></div>
+<div class="traffic-tabs"><button class="traffic-tab active" data-tab="city">市區道路</button><button class="traffic-tab" data-tab="freeway">國道路況</button><button class="traffic-tab" data-tab="highway">省道路況</button><button class="traffic-tab" data-tab="incidents">交通事件</button></div>
+<div class="traffic-summary" id="trafficSummary"><div class="traffic-metric"><span>資料筆數</span><b>--</b></div><div class="traffic-metric"><span>官方更新時間</span><b>--</b></div><div class="traffic-metric"><span>資料狀態</span><b>載入中</b></div></div>
+<div class="traffic-results" id="trafficResults">正在取得 TDX 即時資料…</div>
+<div class="traffic-note">資料來源：交通部 TDX。臺中市道路壅塞線使用官方 LiveTraffics、LinkID 與 WKT 道路幾何配對；其他縣市及其他資料集保留原有 API 讀取方式。</div>
+</section>
+</main>
+<footer><span>© 2026 Xuan Traffic · 台灣即時交通監測網</span><span>GitHub Actions + GitHub Pages</span></footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const WORKER='https://xuan-traffic-api.a0916878920.workers.dev';
+const DATA_BASE='https://xuan-weather.github.io/xuan-disaster/data/';
+const TAIWAN_BOUNDS=L.latLngBounds([[21.85,119.25],[25.45,122.10]]);
+const map=L.map('map',{scrollWheelZoom:false}).fitBounds(TAIWAN_BOUNDS,{padding:[18,18],maxZoom:7});
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap'}).addTo(map);
+const liveLayer=L.layerGroup().addTo(map);
+const legend=L.control({position:'bottomleft'});
+legend.onAdd=function(){const d=L.DomUtil.create('div','traffic-legend');d.innerHTML='<b>即時道路壅塞</b><div><span style="background:#22c55e"></span>順暢（1級）</div><div><span style="background:#eab308"></span>車多（2級）</div><div><span style="background:#f97316"></span>壅塞（3級）</div><div><span style="background:#ef4444"></span>嚴重壅塞（4–5級）</div>';L.DomEvent.disableClickPropagation(d);return d};legend.addTo(map);
+const S={tab:'city',city:'ALL',busy:false,nationalTraffic:null,nationalGeometry:null};
+const $=id=>document.getElementById(id);
+const pathFor=k=>k==='city'?`/api/basic/v2/Road/Traffic/Live/City/${S.city}?$top=200&$format=JSON`:k==='freeway'?'/api/basic/v2/Road/Traffic/Live/Freeway?$top=200&$format=JSON':k==='highway'?'/api/basic/v2/Road/Traffic/Live/Highway?$top=200&$format=JSON':`/api/basic/v1/Road/Traffic/Incident/City/${S.city}?$top=200&$format=JSON`;
+async function api(path){const r=await fetch(WORKER+'/api?path='+encodeURIComponent(path),{cache:'no-store'});const t=await r.text();let j;try{j=JSON.parse(t)}catch{throw Error('回傳格式不是 JSON（HTTP '+r.status+'）')}if(!r.ok)throw Error(j.error||j.message||('HTTP '+r.status));if(j.success===false)throw Error(j.error?.message||j.error||'TDX 回傳失敗');return j}
+function rows(j){if(Array.isArray(j))return j;for(const k of ['LiveTraffics','Traffics','Incidents','RoadEvents','Events','Data','data','Records','records'])if(Array.isArray(j?.[k]))return j[k];return Object.values(j||{}).find(Array.isArray)||[]}
+function val(o,ks){for(const k of ks)if(o?.[k]!==undefined&&o[k]!==null&&o[k]!=='')return o[k];return ''}
+function fmt(v){return v===''?'—':typeof v==='object'?JSON.stringify(v):String(v)}
+function safe(v){return String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function fields(o){const defs=[['路段','SectionName','RoadName','RoadSectionName','Name','SectionID'],['方向','Direction','RoadDirection'],['車速','Speed','AvgSpeed','TravelSpeed'],['旅行時間','TravelTime','EstimatedTravelTime'],['壅塞等級','CongestionLevel','Congestion','TrafficLevel','Level'],['事件','IncidentDescription','Description','EventDescription','Message'],['事件類型','IncidentType','EventType','Type'],['時間','UpdateTime','SrcUpdateTime','StartTime','OccurrenceTime']];let a=[];for(const d of defs){let v=val(o,d.slice(1));if(v!=='')a.push([d[0],fmt(v)])}if(!a.length)for(const [k,v] of Object.entries(o||{})){if(v===null||typeof v!=='object')a.push([k,fmt(v)]);if(a.length===7)break}return a}
+function congestionStyle(level){const n=Number(level);if(n===1)return{color:'#22c55e',label:'順暢'};if(n===2)return{color:'#eab308',label:'車多'};if(n===3)return{color:'#f97316',label:'壅塞'};if(n>=4)return{color:'#ef4444',label:'嚴重壅塞'};return{color:'#94a3b8',label:'未知'}}
+function parseWKT(wkt){const m=String(wkt||'').match(/LINESTRING\s*\((.+)\)/i);if(!m)return[];return m[1].split(',').map(x=>x.trim().split(/\s+/).map(Number)).filter(p=>p.length>=2&&Number.isFinite(p[0])&&Number.isFinite(p[1])).map(p=>[p[1],p[0]])}
+function drawCongestion(traffic,geometry){
+ liveLayer.clearLayers();
+ const geoMap=new Map();
+ for(const batch of geometry.responses||[])for(const item of batch.data||[])if(item.LinkID&&item.Geometry)geoMap.set(String(item.LinkID),item.Geometry);
+ const cityName=new Map((traffic.cities||[]).map(c=>[c.city,c.cityName]));
+ const records=[];
+ for(const city of (traffic.cities||[])){
+  if(S.city!=='ALL'&&city.city!==S.city)continue;
+  for(const section of city.records||[])records.push({...section,_cityName:city.cityName});
+ }
+ const links=new Map();
+ for(const section of records)for(const link of section.LinkIDs||[]){
+  const id=String(link.LinkID||'');if(!id)continue;
+  const old=links.get(id);
+  if(!old||Number(section.CongestionLevel)>Number(old.CongestionLevel))links.set(id,{...section,_linkID:id});
+ }
+ let drawn=0,matched=0;const bounds=[];
+ for(const [id,section] of links){
+  const wkt=geoMap.get(id);if(!wkt)continue;
+  const pts=parseWKT(wkt);if(pts.length<2)continue;
+  matched++;
+  const st=congestionStyle(section.CongestionLevel);
+  const line=L.polyline(pts,{color:st.color,weight:S.city==='ALL'?3.5:5,opacity:.9,lineCap:'round',lineJoin:'round'}).addTo(liveLayer);
+  line.bindPopup('<b>TDX 即時道路路況</b><br>縣市：'+safe(section._cityName||'—')+'<br>路段編號：'+safe(section.SectionID)+'<br>LinkID：'+safe(id)+'<br>平均車速：'+safe(section.TravelSpeed===undefined?'—':section.TravelSpeed+' km/h')+'<br>旅行時間：'+safe(section.TravelTime===undefined?'—':section.TravelTime+' 秒')+'<br>壅塞狀態：'+safe(st.label)+'（'+safe(section.CongestionLevel)+'級）<br>資料蒐集時間：'+safe(section.DataCollectTime||'—'));
+  pts.forEach(p=>bounds.push(p));drawn++;
+ }
+ if(S.city==='ALL'){map.fitBounds(TAIWAN_BOUNDS,{padding:[18,18],maxZoom:7})}else if(bounds.length){map.fitBounds(L.latLngBounds(bounds).pad(.08),{maxZoom:13})}
+ const selected=traffic.cities||[];
+ $('mapfoot').textContent=(S.city==='ALL'?'全台灣':'所選縣市')+'即時道路壅塞：成功取得 '+selected.length+'/22 個縣市資料；已繪製 '+drawn+' 條道路線（配對 '+matched+'/'+links.size+' 個 LinkID）。資料每 5 分鐘由 GitHub Actions 更新，網頁每 60 秒讀取。';
+}
+function render(k,j){const a=rows(j),t=val(j,['officialUpdateTime','UpdateTime','SrcUpdateTime','UpdateDateTime'])||val(a[0],['UpdateTime','SrcUpdateTime','UpdateDateTime'])||'未提供';
+ $('trafficSummary').innerHTML='<div class="traffic-metric"><span>資料筆數</span><b>'+a.length+'</b></div><div class="traffic-metric"><span>官方更新時間</span><b>'+safe(fmt(t))+'</b></div><div class="traffic-metric"><span>資料狀態</span><b>'+(a.length?'已取得':'無資料')+'</b></div>';
+ if(k==='incidents')$('eventCount').textContent=a.length;
+ $('trafficResults').innerHTML=a.length?'<div style="overflow-x:auto"><table class="traffic-table"><tbody>'+a.slice(0,80).map((o,i)=>'<tr><th>'+(i+1)+'</th><td>'+fields(o).map(([x,y])=>'<div><b>'+safe(x)+'：</b>'+safe(y)+'</div>').join('')+'</td></tr>').join('')+'</tbody></table></div><p>最多顯示前 80 筆；官方回傳共 '+a.length+' 筆。</p>':'目前沒有可顯示資料。';
+}
+async function load(k){if(S.busy)return;S.busy=true;$('connectionStatus').textContent='讀取中…';$('trafficResults').textContent='正在取得全台官方交通資料…';
+ try{
+  if(k==='city'){
+   const [traffic,geometry]=await Promise.all([
+    fetch(DATA_BASE+'traffic-taiwan.json?ts='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('全台路況 JSON HTTP '+r.status);return r.json()}),
+    fetch(DATA_BASE+'traffic-taiwan-geometry.json?ts='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('全台道路幾何 JSON HTTP '+r.status);return r.json()})
+   ]);
+   if(!traffic.success||!geometry.success)throw Error('全台 JSON 尚未準備完成');
+   S.nationalTraffic=traffic;S.nationalGeometry=geometry;
+   const selected=traffic.cities||[];
+   const records=selected.filter(c=>S.city==='ALL'||c.city===S.city).flatMap(c=>c.records||[]);
+   const selectedName=S.city==='ALL'?'全台灣':(selected.find(c=>c.city===S.city)?.cityName||S.city);
+   render(k,{success:true,officialUpdateTime:Math.max(...selected.map(c=>Date.parse(c.officialUpdateTime||0)).filter(Number.isFinite),0)?new Date(Math.max(...selected.map(c=>Date.parse(c.officialUpdateTime||0)).filter(Number.isFinite))).toLocaleString('zh-TW',{hour12:false}):'未提供',LiveTraffics:records});
+   drawCongestion(traffic,geometry);
+   $('trafficResults').innerHTML='<b>'+safe(selectedName)+'</b>：目前取得 '+records.length+' 筆即時路況。<br>成功取得 '+selected.length+' / '+traffic.totalCityCount+' 個縣市；道路幾何 '+(geometry.returnedGeometryCount||0)+' 筆。<br>資料更新時間依各縣市官方發布時間為準。';
+   $('eventCount').textContent=traffic.failedCities?.length?('部分縣市失敗 '+traffic.failedCities.length):'--';
+  }else{
+   const j=await api(pathFor(k));render(k,j);liveLayer.clearLayers();
+   $('mapfoot').textContent='此資料集使用原有 TDX API 讀取方式；全台道路壅塞線功能目前套用於市區道路資料。';
+  }
+  $('connectionStatus').textContent='資料取得成功';$('topDataStatus').textContent='已連線';$('lastUpdated').textContent='頁面讀取：'+new Date().toLocaleString('zh-TW',{hour12:false});
+  document.querySelector('.status').innerHTML='<i></i>TDX 全台交通資料｜已連線';
+ }catch(e){$('trafficResults').textContent='讀取失敗：'+e.message;$('connectionStatus').textContent='資料讀取失敗';$('topDataStatus').textContent='資料讀取失敗';$('mapfoot').textContent='目前無法讀取全台路況或道路幾何 JSON，請確認 GitHub Actions 執行結果。'}
+ finally{S.busy=false}
+}
+document.querySelectorAll('.traffic-tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.traffic-tab').forEach(x=>x.classList.toggle('active',x===b));S.tab=b.dataset.tab;load(S.tab)}));
+$('citySelect').addEventListener('change',e=>{S.city=e.target.value;if(S.tab==='city'||S.tab==='incidents')load(S.tab)});
+$('refreshBtn').addEventListener('click',()=>load(S.tab));
+document.querySelectorAll('.module').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.title==='國道路況'?'freeway':b.dataset.title==='道路事件'?'incidents':b.dataset.title==='即時影像'?'city':null;if(k)document.querySelector('.traffic-tab[data-tab="'+k+'"]').click();else $('notice').innerHTML='<b>'+safe(b.dataset.title)+'</b><br>'+safe(b.dataset.desc)+'<br><br>此模組先保留入口，待資料串接後再擴充。'}));
+load('city');
+window.addEventListener('resize',()=>{map.invalidateSize();if(S.city==='ALL')map.fitBounds(TAIWAN_BOUNDS,{padding:[18,18],maxZoom:7})});
+setTimeout(()=>{map.invalidateSize();map.fitBounds(TAIWAN_BOUNDS,{padding:[18,18],maxZoom:7})},300);
+setInterval(()=>{if(!document.hidden)load(S.tab)},60000);
+</script>
+</body></html>
