@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-Hant"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#102b2a"><title>Xuan Travel｜台灣旅遊地圖</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--bg:#f3f6f2;--paper:#fff;--ink:#18302d;--muted:#71817b;--line:#dfe8e1;--green:#176b56;--mint:#dff2e9}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif}
+header{height:68px;padding:0 20px;background:#102b2a;color:white;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:500}
+.brand{display:flex;align-items:center;gap:11px}.logo{width:40px;height:40px;border-radius:13px;background:linear-gradient(145deg,#f2c46d,#e58c55);display:grid;place-items:center;font-size:22px}.brand b{font-size:17px}.brand small{display:block;color:#a9c6bc;font-size:9px;letter-spacing:2px}
+button{cursor:pointer;font:inherit}.btn{border:1px solid var(--line);background:white;color:var(--ink);border-radius:10px;padding:9px 12px;font-size:12px}.primary{background:var(--green);color:white;border-color:var(--green)}
+main{max-width:1450px;margin:auto;padding:22px 22px 40px}.hero{display:flex;justify-content:space-between;align-items:end;gap:15px;flex-wrap:wrap;margin-bottom:18px}.eyebrow{font-size:11px;color:var(--green);font-weight:800;letter-spacing:3px}.hero h1{font-size:clamp(28px,4vw,40px);margin:7px 0}.hero p{color:var(--muted);font-size:14px;margin:0}.note{background:#fff8e9;border:1px solid #f1dfb9;color:#8a6423;border-radius:11px;padding:10px 12px;font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.stat,.panel{background:white;border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 28px #173a2b0d}.stat{padding:12px 15px}.stat span{display:block;color:var(--muted);font-size:11px}.stat b{font-size:20px;display:block;margin-top:4px}
+.layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(290px,.8fr);gap:15px}.panel{overflow:hidden}.head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.head small{color:var(--muted);font-size:10px}
+.tools,.filters{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;gap:7px;align-items:center;flex-wrap:wrap;background:#fbfdfb}.search{display:flex;flex:1;min-width:180px}.search input{width:100%;border:1px solid var(--line);border-radius:9px 0 0 9px;padding:10px;font-size:13px}.search button{border-radius:0 9px 9px 0;background:var(--green);color:white;border:0;padding:0 14px}
+.chip{border:1px solid var(--line);background:white;color:#51645c;border-radius:99px;padding:7px 10px;font-size:11px}.chip.active{background:var(--mint);border-color:#8fc8ad;color:#145a47;font-weight:700}
+#map{height:min(68vh,740px);min-height:450px;background:#d8e8e3}.foot{padding:9px 13px;color:var(--muted);font-size:10px;line-height:1.5;border-top:1px solid var(--line)}
+.side{padding:13px}.list{display:grid;gap:8px;max-height:440px;overflow:auto}.place{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer}.place:hover{background:#f7fbf8;border-color:#86bba4}.ico{width:40px;height:40px;border-radius:11px;background:#edf6f0;display:grid;place-items:center;font-size:21px}.place div:nth-child(2){flex:1;min-width:0}.place b{font-size:12px}.place small{display:block;color:var(--muted);font-size:10px;margin-top:4px}.detail,.route{margin-top:12px;padding:12px;border:1px solid #d6e8dd;background:#f5fbf7;border-radius:12px;display:none}.detail.show{display:block}.detail h3{margin:0 0 5px;font-size:15px}.detail p,.route p{font-size:11px;color:var(--muted);line-height:1.6}.actions{display:flex;gap:6px;flex-wrap:wrap}.actions .btn{font-size:10px;padding:7px 9px}.route{display:block;background:white;border-color:var(--line)}.route b{font-size:12px}
+.fullscreen{position:fixed!important;inset:8px!important;z-index:3000!important;display:flex;flex-direction:column}.fullscreen #map{height:auto;min-height:0;flex:1}
+footer{text-align:center;padding:20px;color:#83928a;font-size:10px}
+@media(max-width:850px){main{padding:16px 12px 28px}.layout{grid-template-columns:1fr}#map{height:58vh;min-height:410px}.list{max-height:300px}}
+@media(max-width:500px){header{padding:0 12px;height:62px}.brand b{font-size:15px}.brand small{font-size:8px}.btn{padding:8px 9px;font-size:11px}main{padding:14px 9px}.stats{gap:6px}.stat{padding:10px}.stat b{font-size:17px}.stat span{font-size:10px}.note{width:100%}#map{height:56vh;min-height:390px}.head{padding:12px}.tools,.filters{padding:8px}}
+</style></head><body>
+<header><div class="brand"><div class="logo">🧭</div><div><b>Xuan Travel</b><small>TAIWAN TRAVEL MAP</small></div></div><div><button class="btn" id="locate">◎ 我的位置</button> <button class="btn primary" id="favTop">♡ 收藏</button></div></header>
+<main>
+<section class="hero"><div><div class="eyebrow">DISCOVER TAIWAN</div><h1>台灣旅遊地圖</h1><p>探索台灣景點、美食、自然風景與文化地標，收藏想去的地方，規劃下一趟旅程。</p></div><div class="note">🗺️ 搜尋地點・分類探索・收藏・路線規劃</div></section>
+<section class="stats"><div class="stat"><span>地圖景點</span><b id="count">22 個</b></div><div class="stat"><span>目前分類</span><b id="catNow">全部</b></div><div class="stat"><span>我的收藏</span><b id="favCount">0 個</b></div></section>
+<section class="layout"><div class="panel" id="mapPanel">
+<div class="head"><b>🗺️ 台灣旅遊探索地圖</b><small>TAIWAN EXPLORER</small></div>
+<div class="tools"><div class="search"><input id="query" placeholder="搜尋景點、城市或地址…"><button id="search">搜尋</button></div><button class="btn" id="fit">台灣全覽</button><button class="btn" id="full">⛶</button></div>
+<div class="filters" id="filters"><button class="chip active" data-cat="全部">全部</button><button class="chip" data-cat="景點">📍 景點</button><button class="chip" data-cat="自然">🌿 自然</button><button class="chip" data-cat="文化">🏛️ 文化</button><button class="chip" data-cat="美食">🍜 美食</button><button class="chip" data-cat="海岸">🏖️ 海岸</button></div>
+<div id="map"></div><div class="foot" id="foot">景點為內建探索起點；底圖及搜尋服務由 OpenStreetMap 提供。出發前請自行確認景點開放、交通及天候資訊。</div>
+</div><aside class="panel"><div class="head"><b>✨ 探索台灣</b><small>PLACES TO GO</small></div><div class="side">
+<div style="display:flex;justify-content:space-between;margin-bottom:10px"><b id="heading" style="font-size:13px">推薦景點</b><small id="listCount" style="color:#71817b">—</small></div><div class="list" id="list"></div>
+<div class="detail" id="detail"><h3 id="dName"></h3><p id="dDesc"></p><div class="actions"><button class="btn primary" id="route">規劃前往</button><button class="btn" id="fav">♡ 加入收藏</button><button class="btn" id="external">外部地圖</button></div></div>
+<div class="route"><b>🚗 路線規劃</b><p id="routeText">選擇景點並允許定位，即可從目前位置規劃開車路線。</p><button class="btn" id="clear">清除路線</button></div>
+</div></aside></section></main><footer>© 2026 Xuan Travel · 台灣旅遊地圖 ｜ 地圖資料 © OpenStreetMap contributors</footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>
+const places=[
+[1,'九份老街','新北市瑞芳區','文化','🏮',25.1096,121.8453,'山城巷弄、茶樓與海景交織的經典老街。'],
+[2,'淡水老街','新北市淡水區','景點','⛵',25.1697,121.4409,'河岸散步、老街小吃與夕陽景色。'],
+[3,'台北101','台北市信義區','景點','🏙️',25.0339,121.5645,'台北代表性地標與城市觀景地點。'],
+[4,'陽明山國家公園','台北市／新北市','自然','🌿',25.1667,121.5667,'火山地形、步道、花季與自然景觀。'],
+[5,'野柳地質公園','新北市萬里區','自然','🪨',25.2051,121.6905,'海蝕地形與奇岩景觀。'],
+[6,'十分瀑布','新北市平溪區','自然','💧',25.0413,121.7817,'瀑布步道與周邊山城風景。'],
+[7,'礁溪溫泉','宜蘭縣礁溪鄉','景點','♨️',24.8277,121.7742,'溫泉街、足湯與宜蘭慢旅行。'],
+[8,'太魯閣國家公園','花蓮縣秀林鄉','自然','⛰️',24.1558,121.6217,'峽谷與山岳地景；出發前請確認園區開放及道路管制。'],
+[9,'七星潭','花蓮縣新城鄉','海岸','🌊',24.0318,121.6305,'弧形海灣與太平洋海景，海邊請注意浪況。'],
+[10,'池上伯朗大道','台東縣池上鄉','自然','🌾',23.1218,121.2168,'稻田景觀與自行車旅行。'],
+[11,'三仙台','台東縣成功鎮','海岸','🌅',23.1258,121.4064,'海岸地形與跨海拱橋景觀。'],
+[12,'阿里山森林遊樂區','嘉義縣阿里山鄉','自然','🌲',23.5109,120.8056,'森林鐵路、森林步道與日出景觀。'],
+[13,'安平古堡','台南市安平區','文化','🏯',23.0017,120.1605,'台南歷史古蹟與安平老街周邊。'],
+[14,'赤崁樓','台南市中西區','文化','🏛️',22.9972,120.2024,'台南市區重要歷史古蹟。'],
+[15,'旗津老街','高雄市旗津區','美食','🦑',22.6127,120.2697,'海產小吃、渡輪與海岸風光。'],
+[16,'駁二藝術特區','高雄市鹽埕區','文化','🎨',22.6206,120.2817,'港灣倉庫群改造的藝文展演空間。'],
+[17,'墾丁大街','屏東縣恆春鎮','美食','🍢',21.9457,120.7986,'南國夜市與度假商圈。'],
+[18,'鵝鑾鼻公園','屏東縣恆春鎮','海岸','🌴',21.9039,120.8527,'台灣南端海岸景觀與燈塔。'],
+[19,'日月潭','南投縣魚池鄉','自然','🚣',23.8569,120.9150,'湖景、自行車道與環湖遊程。'],
+[20,'鹿港老街','彰化縣鹿港鎮','文化','🧧',24.0567,120.4338,'傳統街屋、廟宇與小吃文化。'],
+[21,'高美濕地','台中市清水區','自然','🦀',24.3117,120.5497,'濕地生態與夕陽景觀，請留意潮汐與木棧道開放時間。'],
+[22,'澎湖跨海大橋','澎湖縣白沙鄉','海岸','🌉',23.6454,119.5572,'澎湖代表性跨海景觀道路與海岸風景。']
+].map(x=>({id:x[0],name:x[1],city:x[2],cat:x[3],icon:x[4],lat:x[5],lng:x[6],desc:x[7]}));
+const map=L.map('map').setView([23.7,120.9],7);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
+const markers=L.layerGroup().addTo(map),routes=L.layerGroup().addTo(map);let cat='全部',chosen=null,position=null,searchPin=null,favs=JSON.parse(localStorage.getItem('xuanTravelFavs')||'[]');
+const $=id=>document.getElementById(id),safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function showStats(){ $('catNow').textContent=cat;$('favCount').textContent=favs.length+' 個';}
+function render(){
+ markers.clearLayers();let arr=places.filter(p=>cat==='全部'||p.cat===cat);
+ arr.forEach(p=>L.marker([p.lat,p.lng]).addTo(markers).bindPopup(`<b>${p.icon} ${safe(p.name)}</b><br>${safe(p.city)}｜${safe(p.cat)}<br>${safe(p.desc)}`).on('click',()=>select(p,false)));
+ $('list').innerHTML=arr.map(p=>`<div class="place" data-id="${p.id}"><div class="ico">${p.icon}</div><div><b>${safe(p.name)}</b><small>${safe(p.city)} · ${p.cat}</small></div><span>›</span></div>`).join('');
+ document.querySelectorAll('.place').forEach(el=>el.onclick=()=>select(places.find(p=>p.id===+el.dataset.id),true));
+ $('count').textContent=places.length+' 個';$('listCount').textContent=arr.length+' 個地點';$('heading').textContent=cat==='全部'?'推薦景點':cat+'地點';showStats();
+}
+function select(p,zoom=true){chosen=p;$('detail').classList.add('show');$('dName').textContent=p.icon+' '+p.name;$('dDesc').textContent=p.city+'｜'+p.cat+'｜'+p.desc;$('fav').textContent=favs.includes(p.id)?'♥ 已收藏':'♡ 加入收藏';if(zoom){map.setView([p.lat,p.lng],13);markers.eachLayer(m=>{let ll=m.getLatLng();if(ll.lat===p.lat&&ll.lng===p.lng)m.openPopup()})}}
+document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{cat=b.dataset.cat;document.querySelectorAll('[data-cat]').forEach(x=>x.classList.toggle('active',x===b));render()});
+$('fav').onclick=()=>{if(!chosen)return;favs=favs.includes(chosen.id)?favs.filter(x=>x!==chosen.id):[...favs,chosen.id];localStorage.setItem('xuanTravelFavs',JSON.stringify(favs));$('fav').textContent=favs.includes(chosen.id)?'♥ 已收藏':'♡ 加入收藏';showStats()};
+$('favTop').onclick=()=>{let a=places.filter(p=>favs.includes(p.id));$('heading').textContent='我的收藏';$('listCount').textContent=a.length+' 個地點';$('list').innerHTML=a.length?a.map(p=>`<div class="place" data-id="${p.id}"><div class="ico">${p.icon}</div><div><b>${safe(p.name)}</b><small>${safe(p.city)}</small></div></div>`).join(''):'<p style="font-size:12px;color:#71817b">尚未收藏景點。</p>';document.querySelectorAll('.place').forEach(el=>el.onclick=()=>select(places.find(p=>p.id===+el.dataset.id),true))};
+$('fit').onclick=()=>map.fitBounds([[21.7,119.2],[25.5,122.2]],{padding:[18,18]});$('full').onclick=()=>{$('mapPanel').classList.toggle('fullscreen');setTimeout(()=>map.invalidateSize(),180)};
+$('locate').onclick=()=>{if(!navigator.geolocation)return alert('瀏覽器不支援定位');navigator.geolocation.getCurrentPosition(p=>{position=[p.coords.latitude,p.coords.longitude];L.circleMarker(position,{radius:8,color:'#fff',weight:3,fillColor:'#2676d2',fillOpacity:1}).addTo(routes).bindPopup('目前位置').openPopup();map.setView(position,13)},()=>alert('無法取得位置，請確認定位權限'))};
+$('external').onclick=()=>{if(chosen)window.open(`https://www.google.com/maps/search/?api=1&query=${chosen.lat},${chosen.lng}`,'_blank')};
+$('route').onclick=async()=>{if(!chosen)return;if(!position){$('routeText').textContent='請先按「我​​的位置」允許定位。';return}$('routeText').textContent='正在規劃路線…';routes.clearLayers();try{let [a,b]=position;let r=await fetch(`https://router.project-osrm.org/route/v1/driving/${b},${a};${chosen.lng},${chosen.lat}?overview=full&geometries=geojson`);if(!r.ok)throw Error('路線服務暫時無法使用');let d=await r.json(),v=d.routes?.[0];if(!v)throw Error('找不到路線');L.geoJSON(v.geometry,{style:{color:'#16765b',weight:5}}).addTo(routes);map.fitBounds(L.geoJSON(v.geometry).getBounds(),{padding:[20,20]});$('routeText').textContent=`${chosen.name}｜約 ${(v.distance/1000).toFixed(1)} 公里，開車約 ${Math.round(v.duration/60)} 分鐘。實際路況請以現場資訊為準。`}catch(e){$('routeText').textContent='目前無法取得路線：'+e.message+'。可使用外部地圖導航。'}};
+$('clear').onclick=()=>{routes.clearLayers();$('routeText').textContent='路線已清除。'};
+async function search(){let q=$('query').value.trim();if(!q)return;$('foot').textContent='搜尋中…';try{let r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=zh-TW&q='+encodeURIComponent(q));if(!r.ok)throw Error('搜尋服務暫時無法使用');let a=await r.json();if(!a.length){$('foot').textContent='找不到搜尋結果，請更換關鍵字。';return}let x=a[0];if(searchPin)map.removeLayer(searchPin);searchPin=L.marker([+x.lat,+x.lon]).addTo(map).bindPopup(`<b>${safe(x.name||q)}</b><br>${safe(x.display_name)}`).openPopup();map.setView([+x.lat,+x.lon],14);$('foot').textContent='搜尋結果：'+x.display_name+'｜OpenStreetMap Nominatim。'}catch(e){$('foot').textContent='搜尋失敗：'+e.message}}
+$('search').onclick=search;$('query').onkeydown=e=>{if(e.key==='Enter')search()};
+render();map.fitBounds([[21.7,119.2],[25.5,122.2]],{padding:[18,18]});
+</script></body></html>
