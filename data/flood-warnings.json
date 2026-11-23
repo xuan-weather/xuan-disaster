@@ -1,1 +1,1 @@
-{"success":false,"status":"api_key_required","source":"經濟部水利署防災資訊服務","sourceUrl":"https://fhy.wra.gov.tw/Api/v2/Disaster/Flooding","fetchedAt":"2026-11-22T20:18:16.474673+00:00","eventCount":0,"events":[],"message":"水利署 FHY 防災 API 需要申請專用 API 金鑰；目前未取得授權，因此無法讀取即時淹水災情。"}\n
+{"success":false,"status":"api_key_required","source":"經濟部水利署防災資訊服務","sourceUrl":"https://fhy.wra.gov.tw/Api/v2/Disaster/Flooding","fetchedAt":"2026-11-23T00:58:05.925371+00:00","eventCount":0,"events":[],"message":"水利署 FHY 防災 API 需要申請專用 API 金鑰；目前未取得授權，因此無法讀取即時淹水災情。"}\n
