@@ -20,7 +20,7 @@ main{max-width:1450px;margin:auto;padding:22px 22px 40px}.hero{display:flex;just
 footer{text-align:center;padding:20px;color:#83928a;font-size:10px}
 @media(max-width:850px){main{padding:16px 12px 28px}.layout{grid-template-columns:1fr}#map{height:58vh;min-height:410px}.list{max-height:300px}}
 @media(max-width:500px){header{padding:0 12px;height:62px}.brand b{font-size:15px}.brand small{font-size:8px}.btn{padding:8px 9px;font-size:11px}main{padding:14px 9px}.stats{gap:6px}.stat{padding:10px}.stat b{font-size:17px}.stat span{font-size:10px}.note{width:100%}#map{height:56vh;min-height:390px}.head{padding:12px}.tools,.filters{padding:8px}}
-</style></head><body>
+.hero{background:linear-gradient(115deg,#e6f2eb,#f7f4e9 58%,#f5e8d9);border:1px solid #dce9df;border-radius:22px;padding:24px 26px;min-height:160px;align-items:center;position:relative;overflow:hidden}.hero:after{content:"✦";position:absolute;right:5%;top:-45px;font-size:210px;color:#ffffff80;pointer-events:none}.hero>div{position:relative;z-index:1}.hero p{max-width:650px;line-height:1.8}.trip-section{margin-top:18px;display:grid;grid-template-columns:1.2fr .8fr;gap:14px}.trip-card{background:white;border:1px solid var(--line);border-radius:17px;padding:16px;box-shadow:0 10px 28px #173a2b0d}.trip-card h2{font-size:17px;margin:0 0 5px}.trip-card>p{font-size:11px;color:var(--muted);line-height:1.7;margin:0 0 12px}.theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.theme{border:1px solid var(--line);background:#fbfdfb;border-radius:13px;padding:12px;text-align:left;color:var(--ink)}.theme b{display:block;font-size:12px;margin:5px 0}.theme small{color:var(--muted);font-size:10px;line-height:1.5}.theme span{font-size:22px}.theme:hover{border-color:#8fc8ad;background:#f2faf5}.itinerary{display:grid;gap:7px;min-height:60px}.trip-stop{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid var(--line);border-radius:11px;background:#fff}.trip-stop .stop-name{flex:1;font-size:11px;min-width:0}.trip-stop small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.trip-stop button{border:0;background:#f6eee9;color:#995b40;border-radius:8px;padding:6px 8px}.trip-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.badge-note{display:inline-block;padding:4px 8px;border-radius:99px;background:#e9f5ee;color:#23664e;font-size:10px}@media(max-width:850px){.trip-section{grid-template-columns:1fr}}@media(max-width:500px){.hero{padding:18px 15px;min-height:0}.hero:after{font-size:130px;right:-8%;top:-15px}.trip-card{padding:13px}}</style></head><body>
 <header><div class="brand"><div class="logo">🧭</div><div><b>Xuan Travel</b><small>TAIWAN TRAVEL MAP</small></div></div><div><button class="btn" id="locate">◎ 我的位置</button> <button class="btn primary" id="favTop">♡ 收藏</button></div></header>
 <main>
 <section class="hero"><div><div class="eyebrow">DISCOVER TAIWAN</div><h1>台灣旅遊地圖</h1><p>探索台灣景點、美食、自然風景與文化地標，收藏想去的地方，規劃下一趟旅程。</p></div><div class="note">🗺️ 搜尋地點・分類探索・收藏・路線規劃</div></section>
@@ -32,9 +32,9 @@ footer{text-align:center;padding:20px;color:#83928a;font-size:10px}
 <div id="map"></div><div class="foot" id="foot">景點為內建探索起點；底圖及搜尋服務由 OpenStreetMap 提供。出發前請自行確認景點開放、交通及天候資訊。</div>
 </div><aside class="panel"><div class="head"><b>✨ 探索台灣</b><small>PLACES TO GO</small></div><div class="side">
 <div style="display:flex;justify-content:space-between;margin-bottom:10px"><b id="heading" style="font-size:13px">推薦景點</b><small id="listCount" style="color:#71817b">—</small></div><div class="list" id="list"></div>
-<div class="detail" id="detail"><h3 id="dName"></h3><p id="dDesc"></p><div class="actions"><button class="btn primary" id="route">規劃前往</button><button class="btn" id="fav">♡ 加入收藏</button><button class="btn" id="external">外部地圖</button></div></div>
+<div class="detail" id="detail"><h3 id="dName"></h3><p id="dDesc"></p><div class="actions"><button class="btn primary" id="route">規劃前往</button><button class="btn" id="fav">♡ 加入收藏</button><button class="btn" id="external">外部地圖</button><button class="btn" id="addTrip">＋ 加入行程</button></div></div>
 <div class="route"><b>🚗 路線規劃</b><p id="routeText">選擇景點並允許定位，即可從目前位置規劃開車路線。</p><button class="btn" id="clear">清除路線</button></div>
-</div></aside></section></main><footer>© 2026 Xuan Travel · 台灣旅遊地圖 ｜ 地圖資料 © OpenStreetMap contributors</footer>
+</div></aside></section><section class="trip-section" aria-label="旅遊規劃"><div class="trip-card"><div class="eyebrow">CURATED JOURNEYS</div><h2>🧳 主題旅程靈感</h2><p>選擇主題路線，快速把推薦景點加入行程清單；景點順序可以再自行調整。</p><div class="theme-grid"><button class="theme" data-theme="north"><span>🏮</span><b>北台灣山海一日</b><small>九份、十分、野柳與淡水</small></button><button class="theme" data-theme="central"><span>🌿</span><b>中台灣湖山慢遊</b><small>日月潭、阿里山與高美濕地</small></button><button class="theme" data-theme="south"><span>🍜</span><b>府城港都兩日</b><small>台南古蹟、高雄港灣與旗津</small></button><button class="theme" data-theme="east"><span>🌊</span><b>東台灣海岸慢旅</b><small>花蓮、台東海岸與稻田風景</small></button></div></div><div class="trip-card"><div class="eyebrow">MY TRIP</div><h2>📌 我的行程清單 <span id="tripCount" class="badge-note">0 個景點</span></h2><p>加入景點後可複製行程，或交由 Google 地圖規劃多站路線。清單保存在這台裝置。</p><div class="itinerary" id="itinerary"><small style="color:#71817b">尚未加入景點。可從景點詳細資訊加入，或選擇主題旅程。</small></div><div class="trip-actions"><button class="btn primary" id="tripCopy">複製行程</button><button class="btn" id="tripMap">地圖規劃</button><button class="btn" id="tripClear">清空清單</button></div></div></section></main><footer>© 2026 Xuan Travel · 台灣旅遊地圖 ｜ 地圖資料 © OpenStreetMap contributors</footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>
 const places=[
 [1,'九份老街','新北市瑞芳區','文化','🏮',25.1096,121.8453,'山城巷弄、茶樓與海景交織的經典老街。'],
@@ -60,6 +60,30 @@ const places=[
 [21,'高美濕地','台中市清水區','自然','🦀',24.3117,120.5497,'濕地生態與夕陽景觀，請留意潮汐與木棧道開放時間。'],
 [22,'澎湖跨海大橋','澎湖縣白沙鄉','海岸','🌉',23.6454,119.5572,'澎湖代表性跨海景觀道路與海岸風景。']
 ].map(x=>({id:x[0],name:x[1],city:x[2],cat:x[3],icon:x[4],lat:x[5],lng:x[6],desc:x[7]}));
+places.push(
+{id:23,name:'北投地熱谷',city:'台北市北投區',cat:'自然',icon:'♨️',lat:25.1377,lng:121.5089,desc:'火山地熱景觀與北投溫泉文化。'},
+{id:24,name:'平溪老街',city:'新北市平溪區',cat:'文化',icon:'🏮',lat:25.0258,lng:121.7383,desc:'鐵道山城、老街與天燈文化；請遵守現場施放規範。'},
+{id:25,name:'龜山島',city:'宜蘭縣頭城鎮外海',cat:'海岸',icon:'🐢',lat:24.8425,lng:121.9535,desc:'火山島與海上景觀，登島需依公告申請並確認船班。'},
+{id:26,name:'清水斷崖',city:'花蓮縣秀林鄉',cat:'海岸',icon:'🌊',lat:24.2268,lng:121.6850,desc:'山海相接的壯麗海岸景觀，請留意道路與天候管制。'},
+{id:27,name:'瑞穗牧場',city:'花蓮縣瑞穗鄉',cat:'自然',icon:'🐄',lat:23.4964,lng:121.3717,desc:'田園牧場風景與休閒體驗。'},
+{id:28,name:'鹿野高台',city:'台東縣鹿野鄉',cat:'自然',icon:'🪂',lat:22.9122,lng:121.1237,desc:'縱谷景觀與熱氣球活動場域，活動日期依官方公告。'},
+{id:29,name:'北港朝天宮',city:'雲林縣北港鎮',cat:'文化',icon:'🏮',lat:23.5675,lng:120.3025,desc:'重要信仰中心與北港老街文化。'},
+{id:30,name:'嘉義檜意森活村',city:'嘉義市東區',cat:'文化',icon:'🏡',lat:23.4851,lng:120.4512,desc:'日式木造宿舍群與林業文化展示。'},
+{id:31,name:'台中審計新村',city:'台中市西區',cat:'文化',icon:'🎨',lat:24.1448,lng:120.6635,desc:'老宿舍聚落改造的文創與散步空間。'},
+{id:32,name:'新竹城隍廟',city:'新竹市北區',cat:'美食',icon:'🍜',lat:24.8048,lng:120.9657,desc:'廟埕小吃與新竹市區歷史街區。'},
+{id:33,name:'桃園大溪老街',city:'桃園市大溪區',cat:'文化',icon:'🏘️',lat:24.8836,lng:121.2867,desc:'巴洛克立面街屋、木藝與傳統小吃。'},
+{id:34,name:'林本源園邸',city:'新北市板橋區',cat:'文化',icon:'🏯',lat:25.0100,lng:121.4558,desc:'台灣傳統園林建築與庭園景觀。'},
+{id:35,name:'三峽老街',city:'新北市三峽區',cat:'文化',icon:'🧱',lat:24.9340,lng:121.3688,desc:'紅磚拱廊街屋、祖師廟與地方小吃。'},
+{id:36,name:'溪頭自然教育園區',city:'南投縣鹿谷鄉',cat:'自然',icon:'🌲',lat:23.6745,lng:120.7958,desc:'森林步道、竹林與山林自然體驗。'},
+{id:37,name:'奇美博物館',city:'台南市仁德區',cat:'文化',icon:'🏛️',lat:22.9347,lng:120.2268,desc:'藝術、樂器與自然史典藏，參觀資訊依官方公告。'},
+{id:38,name:'衛武營國家藝術文化中心',city:'高雄市鳳山區',cat:'文化',icon:'🎭',lat:22.6252,lng:120.3424,desc:'表演藝術場館與大型公共綠地。'},
+{id:39,name:'佛光山佛陀紀念館',city:'高雄市大樹區',cat:'文化',icon:'🛕',lat:22.7539,lng:120.4462,desc:'大型文化與宗教建築園區，參訪規範依官方公告。'},
+{id:40,name:'小琉球花瓶岩',city:'屏東縣琉球鄉',cat:'海岸',icon:'🪸',lat:22.3405,lng:120.3695,desc:'小琉球代表性海蝕地形，請遵守潮間帶生態規範。'},
+{id:41,name:'綠島朝日溫泉',city:'台東縣綠島鄉',cat:'自然',icon:'♨️',lat:22.6402,lng:121.4935,desc:'海岸海底溫泉景觀，交通與營運狀況依公告。'},
+{id:42,name:'金門莒光樓',city:'金門縣金城鎮',cat:'文化',icon:'🏯',lat:24.4329,lng:118.3175,desc:'金門代表性歷史建築與觀景地點。'},
+{id:43,name:'馬祖芹壁聚落',city:'連江縣北竿鄉',cat:'文化',icon:'🏘️',lat:26.2257,lng:119.9864,desc:'閩東石頭屋聚落與海灣景觀。'},
+{id:44,name:'蘭嶼朗島部落',city:'台東縣蘭嶼鄉',cat:'文化',icon:'🛖',lat:22.0618,lng:121.5335,desc:'達悟族文化與海島聚落，參訪請尊重部落規範。'}
+);
 const map=L.map('map').setView([23.7,120.9],7);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
 const markers=L.layerGroup().addTo(map),routes=L.layerGroup().addTo(map);let cat='全部',chosen=null,position=null,searchPin=null,favs=JSON.parse(localStorage.getItem('xuanTravelFavs')||'[]');
 const $=id=>document.getElementById(id),safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -82,5 +106,14 @@ $('route').onclick=async()=>{if(!chosen)return;if(!position){$('routeText').text
 $('clear').onclick=()=>{routes.clearLayers();$('routeText').textContent='路線已清除。'};
 async function search(){let q=$('query').value.trim();if(!q)return;$('foot').textContent='搜尋中…';try{let r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=zh-TW&q='+encodeURIComponent(q));if(!r.ok)throw Error('搜尋服務暫時無法使用');let a=await r.json();if(!a.length){$('foot').textContent='找不到搜尋結果，請更換關鍵字。';return}let x=a[0];if(searchPin)map.removeLayer(searchPin);searchPin=L.marker([+x.lat,+x.lon]).addTo(map).bindPopup(`<b>${safe(x.name||q)}</b><br>${safe(x.display_name)}`).openPopup();map.setView([+x.lat,+x.lon],14);$('foot').textContent='搜尋結果：'+x.display_name+'｜OpenStreetMap Nominatim。'}catch(e){$('foot').textContent='搜尋失敗：'+e.message}}
 $('search').onclick=search;$('query').onkeydown=e=>{if(e.key==='Enter')search()};
-render();map.fitBounds([[21.7,119.2],[25.5,122.2]],{padding:[18,18]});
+let trip=JSON.parse(localStorage.getItem('xuanTravelTrip')||'[]');
+const themes={north:[1,6,5,2],central:[19,12,21,36],south:[13,14,16,15,37],east:[9,8,10,11,28]};
+function renderTrip(){ $('tripCount').textContent=trip.length+' 個景點'; $('itinerary').innerHTML=trip.length?trip.map((id,i)=>{let p=places.find(x=>x.id===id);return p?'<div class="trip-stop"><b style="color:#8ca69a;font-size:10px">'+(i+1)+'</b><div class="stop-name">'+p.icon+' '+safe(p.name)+'<small>'+safe(p.city)+'</small></div><button data-remove="'+id+'">移除</button></div>':''}).join(''):'<small style="color:#71817b">尚未加入景點。可從景點詳細資訊加入，或選擇主題旅程。</small>';document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{trip=trip.filter(x=>x!==+b.dataset.remove);saveTrip()})}
+function saveTrip(){localStorage.setItem('xuanTravelTrip',JSON.stringify(trip));renderTrip()}
+$('addTrip').onclick=()=>{if(!chosen)return;if(!trip.includes(chosen.id)){trip.push(chosen.id);saveTrip();$('addTrip').textContent='✓ 已加入';setTimeout(()=>$('addTrip').textContent='＋ 加入行程',1300)}else{$('routeText').textContent='這個景點已在行程清單中。'}};
+document.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>{trip=themes[b.dataset.theme].filter(id=>places.some(p=>p.id===id));saveTrip();$('itinerary').scrollIntoView({behavior:'smooth',block:'center'})});
+$('tripCopy').onclick=async()=>{if(!trip.length){$('routeText').textContent='請先加入景點。';return}let s='Xuan Travel｜我的台灣旅遊行程\n'+trip.map((id,i)=>{let p=places.find(x=>x.id===id);return (i+1)+'. '+p.name+'（'+p.city+'）'}).join('\n');try{await navigator.clipboard.writeText(s);$('tripCopy').textContent='已複製！';setTimeout(()=>$('tripCopy').textContent='複製行程',1400)}catch(e){$('routeText').textContent=s}};
+$('tripMap').onclick=()=>{if(!trip.length){$('routeText').textContent='請先加入景點。';return}let ps=trip.map(id=>places.find(p=>p.id===id)).filter(Boolean);let origin=position?position[0]+','+position[1]:ps[0].lat+','+ps[0].lng;let dest=ps[ps.length-1];let way=ps.slice(position?0:1,-1).map(p=>p.lat+','+p.lng).join('|');let url='https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(origin)+'&destination='+dest.lat+','+dest.lng+'&travelmode=driving'+(way?'&waypoints='+encodeURIComponent(way):'');window.open(url,'_blank')};
+$('tripClear').onclick=()=>{trip=[];saveTrip()};
+render();renderTrip();map.fitBounds([[21.7,119.2],[25.5,122.2]],{padding:[18,18]});
 </script></body></html>
