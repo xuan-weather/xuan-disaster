@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="zh-Hant"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#102b2a"><title>Xuan Travel｜台灣旅遊地圖</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--bg:#f3f6f2;--paper:#fff;--ink:#18302d;--muted:#71817b;--line:#dfe8e1;--green:#176b56;--mint:#dff2e9}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif}
+header{height:68px;padding:0 20px;background:#102b2a;color:white;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:500}
+.brand{display:flex;align-items:center;gap:11px}.logo{width:40px;height:40px;border-radius:13px;background:linear-gradient(145deg,#f2c46d,#e58c55);display:grid;place-items:center;font-size:22px}.brand b{font-size:17px}.brand small{display:block;color:#a9c6bc;font-size:9px;letter-spacing:2px}
+button{cursor:pointer;font:inherit}.btn{border:1px solid var(--line);background:white;color:var(--ink);border-radius:10px;padding:9px 12px;font-size:12px}.primary{background:var(--green);color:white;border-color:var(--green)}
+main{max-width:1450px;margin:auto;padding:22px 22px 40px}.hero{display:flex;justify-content:space-between;align-items:end;gap:15px;flex-wrap:wrap;margin-bottom:18px}.eyebrow{font-size:11px;color:var(--green);font-weight:800;letter-spacing:3px}.hero h1{font-size:clamp(28px,4vw,40px);margin:7px 0}.hero p{color:var(--muted);font-size:14px;margin:0}.note{background:#fff8e9;border:1px solid #f1dfb9;color:#8a6423;border-radius:11px;padding:10px 12px;font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.stat,.panel{background:white;border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 28px #173a2b0d}.stat{padding:12px 15px}.stat span{display:block;color:var(--muted);font-size:11px}.stat b{font-size:20px;display:block;margin-top:4px}
+.layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(290px,.8fr);gap:15px}.panel{overflow:hidden}.head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.head small{color:var(--muted);font-size:10px}
+.tools,.filters{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;gap:7px;align-items:center;flex-wrap:wrap;background:#fbfdfb}.search{display:flex;flex:1;min-width:180px}.search input{width:100%;border:1px solid var(--line);border-radius:9px 0 0 9px;padding:10px;font-size:13px}.search button{border-radius:0 9px 9px 0;background:var(--green);color:white;border:0;padding:0 14px}
+.chip{border:1px solid var(--line);background:white;color:#51645c;border-radius:99px;padding:7px 10px;font-size:11px}.chip.active{background:var(--mint);border-color:#8fc8ad;color:#145a47;font-weight:700}
+#map{height:min(68vh,740px);min-height:450px;background:#d8e8e3}.foot{padding:9px 13px;color:var(--muted);font-size:10px;line-height:1.5;border-top:1px solid var(--line)}
+.side{padding:13px}.list{display:grid;gap:8px;max-height:440px;overflow:auto}.place{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer}.place:hover{background:#f7fbf8;border-color:#86bba4}.ico{width:40px;height:40px;border-radius:11px;background:#edf6f0;display:grid;place-items:center;font-size:21px}.place div:nth-child(2){flex:1;min-width:0}.place b{font-size:12px}.place small{display:block;color:var(--muted);font-size:10px;margin-top:4px}.detail,.route{margin-top:12px;padding:12px;border:1px solid #d6e8dd;background:#f5fbf7;border-radius:12px;display:none}.detail.show{display:block}.detail h3{margin:0 0 5px;font-size:15px}.detail p,.route p{font-size:11px;color:var(--muted);line-height:1.6}.actions{display:flex;gap:6px;flex-wrap:wrap}.actions .btn{font-size:10px;padding:7px 9px}.route{display:block;background:white;border-color:var(--line)}.route b{font-size:12px}
+.fullscreen{position:fixed!important;inset:8px!important;z-index:3000!important;display:flex;flex-direction:column}.fullscreen #map{height:auto;min-height:0;flex:1}
+footer{text-align:center;padding:20px;color:#83928a;font-size:10px}
+@media(max-width:850px){main{padding:16px 12px 28px}.layout{grid-template-columns:1fr}#map{height:58vh;min-height:410px}.list{max-height:300px}}
+@media(max-width:500px){header{padding:0 12px;height:62px}.brand b{font-size:15px}.brand small{font-size:8px}.btn{padding:8px 9px;font-size:11px}main{padding:14px 9px}.stats{gap:6px}.stat{padding:10px}.stat b{font-size:17px}.stat span{font-size:10px}.note{width:100%}#map{height:56vh;min-height:390px}.head{padding:12px}.tools,.filters{padding:8px}}
+.hero{background:linear-gradient(115deg,#e6f2eb,#f7f4e9 58%,#f5e8d9);border:1px solid #dce9df;border-radius:22px;padding:24px 26px;min-height:160px;align-items:center;position:relative;overflow:hidden}.hero:after{content:"✦";position:absolute;right:5%;top:-45px;font-size:210px;color:#ffffff80;pointer-events:none}.hero>div{position:relative;z-index:1}.hero p{max-width:650px;line-height:1.8}.trip-section{margin-top:18px;display:grid;grid-template-columns:1.2fr .8fr;gap:14px}.trip-card{background:white;border:1px solid var(--line);border-radius:17px;padding:16px;box-shadow:0 10px 28px #173a2b0d}.trip-card h2{font-size:17px;margin:0 0 5px}.trip-card>p{font-size:11px;color:var(--muted);line-height:1.7;margin:0 0 12px}.theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.theme{border:1px solid var(--line);background:#fbfdfb;border-radius:13px;padding:12px;text-align:left;color:var(--ink)}.theme b{display:block;font-size:12px;margin:5px 0}.theme small{color:var(--muted);font-size:10px;line-height:1.5}.theme span{font-size:22px}.theme:hover{border-color:#8fc8ad;background:#f2faf5}.itinerary{display:grid;gap:7px;min-height:60px}.trip-stop{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid var(--line);border-radius:11px;background:#fff}.trip-stop .stop-name{flex:1;font-size:11px;min-width:0}.trip-stop small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.trip-stop button{border:0;background:#f6eee9;color:#995b40;border-radius:8px;padding:6px 8px}.trip-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.badge-note{display:inline-block;padding:4px 8px;border-radius:99px;background:#e9f5ee;color:#23664e;font-size:10px}@media(max-width:850px){.trip-section{grid-template-columns:1fr}}@media(max-width:500px){.hero{padding:18px 15px;min-height:0}.hero:after{font-size:130px;right:-8%;top:-15px}.trip-card{padding:13px}}
+/* Homepage visual upgrade - Phase 1 */
+header{gap:18px}
+.main-nav{display:flex;align-items:center;gap:22px;margin-left:auto;margin-right:12px}
+.main-nav a{color:#d7e7df;text-decoration:none;font-size:12px;white-space:nowrap;transition:color .2s}
+.main-nav a:hover{color:#f2c46d}
+.hero{min-height:205px;padding:30px 32px;background:linear-gradient(112deg,#e4f1e9 0%,#f5f3e8 54%,#f3e2d3 100%)}
+.hero h1{font-size:clamp(32px,4.8vw,48px);letter-spacing:.02em}
+.hero p{font-size:15px;max-width:620px}
+.destination-showcase{margin:20px 0 18px}
+.showcase-heading{display:flex;justify-content:space-between;align-items:end;gap:14px;margin:0 2px 13px}
+.showcase-heading h2{font-size:21px;margin:5px 0}
+.showcase-heading p{font-size:12px;color:var(--muted);margin:0;line-height:1.7}
+.showcase-link{color:var(--green);font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;padding-bottom:4px}
+.destination-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.destination-card{min-height:175px;border-radius:16px;overflow:hidden;position:relative;padding:14px;color:white;text-decoration:none;display:flex;flex-direction:column;justify-content:flex-end;background-size:cover;background-position:center;isolation:isolate;box-shadow:0 8px 22px #173a2b16;transition:transform .2s,box-shadow .2s}
+.destination-card:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#071c1b08 12%,#071c1bc9 100%);z-index:-1}
+.destination-card:hover{transform:translateY(-3px);box-shadow:0 13px 27px #173a2b25}
+.destination-north{background-image:url('https://images.unsplash.com/photo-1470004914212-05527e49370b?auto=format&fit=crop&w=900&q=80')}
+.destination-central{background-image:url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80')}
+.destination-south{background-image:url('https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=900&q=80')}
+.destination-east{background-image:url('https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=900&q=80')}
+.destination-tag{font-size:8px;letter-spacing:2px;color:#f5d99e;margin-bottom:7px;font-weight:800}
+.destination-card b{font-size:15px;line-height:1.45}
+.destination-card small{font-size:10px;color:#e1ece7;margin-top:4px}
+.destination-arrow{position:absolute;right:13px;top:12px;width:27px;height:27px;border:1px solid #ffffff80;border-radius:50%;display:grid;place-items:center;background:#ffffff20}
+.quick-explore{margin-top:12px;padding:14px 16px;border:1px solid var(--line);border-radius:15px;background:linear-gradient(100deg,#fff,#f5faf6);display:flex;align-items:center;justify-content:space-between;gap:14px}
+.quick-explore b{display:block;font-size:13px}.quick-explore small{display:block;color:var(--muted);font-size:10px;margin-top:4px}
+.quick-search{display:flex;flex:1;max-width:520px;min-width:220px}
+.quick-search input{min-width:0;flex:1;border:1px solid var(--line);border-radius:9px 0 0 9px;padding:10px 12px;font:inherit;font-size:12px;background:white}
+.quick-search button{border:0;background:var(--green);color:white;border-radius:0 9px 9px 0;padding:0 16px;font-size:11px;font-weight:700}
+#home{scroll-margin-top:15px}
+@media(max-width:850px){.main-nav{order:3;width:100%;justify-content:center;margin:0;padding:0 0 10px;gap:24px}header{height:auto;min-height:62px;flex-wrap:wrap;padding-top:9px}.destination-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.destination-card{min-height:155px}}
+@media(max-width:500px){.main-nav{gap:17px;overflow:auto;justify-content:flex-start}.main-nav a{font-size:11px}.hero{padding:19px 16px}.hero h1{font-size:30px}.hero p{font-size:12px}.showcase-heading h2{font-size:17px}.showcase-heading p{font-size:10px}.destination-grid{gap:8px}.destination-card{min-height:135px;padding:11px}.destination-card b{font-size:13px}.destination-card small{font-size:9px}.quick-explore{align-items:stretch;flex-direction:column;padding:12px}.quick-search{max-width:none;min-width:0}.quick-search input{width:100%}}
+
+
+/* Xuan Travel refresh: clearer hierarchy, simpler navigation and practical tools */
+:root{--bg:#f5f7f5;--paper:#fff;--ink:#20332e;--muted:#74827c;--line:#e5ebe6;--green:#176b56;--mint:#e6f3ec}
+body{background:#f5f7f5;line-height:1.5}
+header{height:64px;padding:0 max(18px,calc((100vw - 1380px)/2));box-shadow:0 3px 18px #102b2a12}
+main{max-width:1380px;padding-top:20px}
+.hero{min-height:174px;padding:25px 28px;border-radius:18px;box-shadow:0 8px 24px #173a2b08}
+.hero h1{font-size:clamp(29px,4vw,42px);margin:5px 0 7px}
+.hero p{font-size:14px;max-width:580px}
+.hero .note{font-size:11px;white-space:nowrap}
+.destination-showcase{margin:22px 0}
+.showcase-heading h2{font-size:19px}
+.destination-card{min-height:155px;border-radius:14px}
+.stats{gap:12px;margin:16px 0}
+.stat,.panel,.trip-card,.prep-card{border-radius:14px;box-shadow:0 4px 18px #173a2b08}
+.stat{padding:11px 14px}
+.stat b{font-size:19px}
+.layout{grid-template-columns:minmax(0,1.65fr) minmax(285px,.75fr);gap:13px}
+.head{padding:13px 15px}
+.head b{font-size:14px}
+.tools,.filters{padding:9px 11px}
+#map{height:min(62vh,660px);min-height:420px}
+.side{padding:12px}
+.list{max-height:390px}
+.place{padding:9px}
+.detail{line-height:1.6}
+.trip-section{margin-top:14px;gap:13px}
+.trip-card{padding:15px}
+.trip-card h2{font-size:16px}
+.theme-grid{gap:7px}
+.theme{padding:10px}
+.theme span{font-size:19px}
+.theme b{font-size:11px}
+.theme small{font-size:9px}
+.trip-stop{padding:8px}
+.trip-stop button{font-size:10px}
+.region-select{border:1px solid var(--line);background:white;color:#40564d;border-radius:9px;padding:7px 10px;font:inherit;font-size:11px;margin-left:auto}
+.prep-card{margin-top:14px;padding:16px;background:#fff;border:1px solid var(--line)}
+.prep-card h2{font-size:16px;margin:3px 0}
+.prep-card p{font-size:11px;color:var(--muted);margin:0 0 12px}
+.prep-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.prep-grid label{display:flex;align-items:center;gap:7px;padding:10px;border:1px solid var(--line);border-radius:10px;font-size:11px;color:#40564d;background:#fbfdfb}
+.prep-grid input{accent-color:var(--green);width:15px;height:15px;flex:none}
+.prep-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:10px;color:var(--muted);font-size:10px}
+footer{padding:22px}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #8fc8ad;outline-offset:2px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.prep-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#map{height:55vh;min-height:390px}.list{max-height:300px}}
+@media(max-width:600px){
+ header{padding:9px 12px;gap:8px}.brand{gap:8px}.logo{width:34px;height:34px;border-radius:10px;font-size:19px}
+ .main-nav{order:3;width:100%;padding:2px 0 5px;gap:20px}.main-nav a{font-size:11px}
+ header>div:last-child{margin-left:auto}header .btn{padding:7px 8px;font-size:10px}
+ main{padding:12px 9px 24px}.hero{padding:18px 15px;min-height:0;gap:10px}
+ .hero .note{white-space:normal;max-width:155px;padding:8px;font-size:9px}
+ .hero h1{font-size:28px}.hero p{font-size:12px}
+ .destination-showcase{margin:17px 0}.showcase-heading{align-items:start}.showcase-heading h2{font-size:16px}
+ .destination-card{min-height:128px}.destination-card b{font-size:12px}
+ .stats{gap:6px}.stat{padding:9px}.stat span{font-size:9px}.stat b{font-size:16px}
+ .tools{gap:6px}.search{min-width:100%;flex-basis:100%}
+ .filters{gap:5px}.chip{padding:6px 8px;font-size:10px}.region-select{margin-left:0;flex:1;min-width:105px}
+ #map{height:53vh;min-height:360px}.head{padding:11px}
+ .trip-card,.prep-card{padding:12px}.prep-grid{grid-template-columns:1fr;gap:6px}.prep-grid label{padding:8px}
+ .trip-section{gap:10px}
+}
+
+</style></head><body>
+<header><div class="brand"><div class="logo">🧭</div><div><b>Xuan Travel</b><small>TAIWAN TRAVEL MAP</small></div></div><nav class="main-nav" aria-label="主要導覽"><a href="#home">首頁</a><a href="#destinations">熱門目的地</a><a href="#mapPanel">旅遊地圖</a><a href="#trip-section">行程規劃</a></nav><div><button class="btn" id="locate">◎ 我的位置</button> <button class="btn primary" id="favTop">♡ 收藏</button></div></header>
+<main>
+<section class="hero" id="home"><div><div class="eyebrow">DISCOVER TAIWAN</div><h1>台灣旅遊地圖</h1><p>探索台灣景點、美食、自然風景與文化地標，收藏想去的地方，規劃下一趟旅程。</p></div><div class="note">🗺️ 搜尋地點・分類探索・收藏・路線規劃</div></section>
+
+<section class="destination-showcase" id="destinations">
+  <div class="showcase-heading"><div><div class="eyebrow">START YOUR JOURNEY</div><h2>從台灣的每個角落，找到下一站</h2><p>精選山海風景、城市漫遊與在地文化，開始規劃你的旅行靈感。</p></div><a href="#mapPanel" class="showcase-link">探索全部地點 ↗</a></div>
+  <div class="destination-grid">
+    <a class="destination-card destination-north" href="#mapPanel" data-jump-search="九份老街"><span class="destination-tag">NORTH TAIWAN</span><b>北台灣・山城與海岸</b><small>九份、十分、淡水與山海風景</small><span class="destination-arrow">↗</span></a>
+    <a class="destination-card destination-central" href="#mapPanel" data-jump-search="日月潭"><span class="destination-tag">CENTRAL TAIWAN</span><b>中台灣・湖光山色</b><small>日月潭、阿里山與森林旅行</small><span class="destination-arrow">↗</span></a>
+    <a class="destination-card destination-south" href="#mapPanel" data-jump-search="駁二藝術特區"><span class="destination-tag">SOUTH TAIWAN</span><b>南台灣・古城與港灣</b><small>台南、高雄與南國海岸</small><span class="destination-arrow">↗</span></a>
+    <a class="destination-card destination-east" href="#mapPanel" data-jump-search="七星潭"><span class="destination-tag">EAST TAIWAN</span><b>東台灣・太平洋慢旅</b><small>花蓮、台東與縱谷風光</small><span class="destination-arrow">↗</span></a>
+  </div>
+  <div class="quick-explore"><div><b>想去哪裡旅行？</b><small>搜尋景點、縣市或旅遊關鍵字</small></div><div class="quick-search"><input id="homeQuery" placeholder="例如：台南美食、花蓮海景、日月潭"><button id="homeSearch">開始探索</button></div></div>
+</section>
+<section class="stats"><div class="stat"><span>地圖景點</span><b id="count">22 個</b></div><div class="stat"><span>目前分類</span><b id="catNow">全部</b></div><div class="stat"><span>我的收藏</span><b id="favCount">0 個</b></div></section>
+<section class="layout"><div class="panel" id="mapPanel">
+<div class="head"><b>🗺️ 台灣旅遊探索地圖</b><small>TAIWAN EXPLORER</small></div>
+<div class="tools"><div class="search"><input id="query" placeholder="搜尋景點、城市或地址…"><button id="search">搜尋</button></div><button class="btn" id="fit">台灣全覽</button><button class="btn" id="full">⛶</button></div>
+<div class="filters" id="filters">
+ <button class="chip active" data-cat="全部">全部</button><button class="chip" data-cat="景點">📍 景點</button><button class="chip" data-cat="自然">🌿 自然</button><button class="chip" data-cat="文化">🏛️ 文化</button><button class="chip" data-cat="美食">🍜 美食</button><button class="chip" data-cat="海岸">🏖️ 海岸</button>
+ <select id="regionFilter" class="region-select" aria-label="依地區篩選"><option value="全部">全台灣</option><option value="北部">北部</option><option value="中部">中部</option><option value="南部">南部</option><option value="東部">東部</option><option value="離島">離島</option></select>
+</div>
+<div id="map"></div><div class="foot" id="foot">景點為內建探索起點；底圖及搜尋服務由 OpenStreetMap 提供。出發前請自行確認景點開放、交通及天候資訊。</div>
+</div><aside class="panel"><div class="head"><b>✨ 探索台灣</b><small>PLACES TO GO</small></div><div class="side">
+<div style="display:flex;justify-content:space-between;margin-bottom:10px"><b id="heading" style="font-size:13px">推薦景點</b><small id="listCount" style="color:#71817b">—</small></div><div class="list" id="list"></div>
+<div class="detail" id="detail"><h3 id="dName"></h3><p id="dDesc"></p><div class="actions"><button class="btn primary" id="route">規劃前往</button><button class="btn" id="fav">♡ 加入收藏</button><button class="btn" id="external">外部地圖</button><button class="btn" id="addTrip">＋ 加入行程</button></div></div>
+<div class="route"><b>🚗 路線規劃</b><p id="routeText">選擇景點並允許定位，即可從目前位置規劃開車路線。</p><button class="btn" id="clear">清除路線</button></div>
+</div></aside></section><section class="trip-section" id="trip-section" aria-label="旅遊規劃"><div class="trip-card"><div class="eyebrow">CURATED JOURNEYS</div><h2>🧳 主題旅程靈感</h2><p>選擇主題路線，快速把推薦景點加入行程清單；景點順序可以再自行調整。</p><div class="theme-grid"><button class="theme" data-theme="north"><span>🏮</span><b>北台灣山海一日</b><small>九份、十分、野柳與淡水</small></button><button class="theme" data-theme="central"><span>🌿</span><b>中台灣湖山慢遊</b><small>日月潭、阿里山與高美濕地</small></button><button class="theme" data-theme="south"><span>🍜</span><b>府城港都兩日</b><small>台南古蹟、高雄港灣與旗津</small></button><button class="theme" data-theme="east"><span>🌊</span><b>東台灣海岸慢旅</b><small>花蓮、台東海岸與稻田風景</small></button></div></div><div class="trip-card"><div class="eyebrow">MY TRIP</div><h2>📌 我的行程清單 <span id="tripCount" class="badge-note">0 個景點</span></h2><p>加入景點後可複製行程，或交由 Google 地圖規劃多站路線。清單保存在這台裝置。</p><div class="itinerary" id="itinerary"><small style="color:#71817b">尚未加入景點。可從景點詳細資訊加入，或選擇主題旅程。</small></div><div class="trip-actions"><button class="btn primary" id="tripCopy">複製行程</button><button class="btn" id="tripMap">地圖規劃</button><button class="btn" id="tripClear">清空清單</button></div></div></section>
+<section class="prep-card" aria-label="出發前檢查">
+ <div><div class="eyebrow">BEFORE YOU GO</div><h2>🎒 出發前檢查</h2><p>勾選完成項目，清單會保存在這台裝置。</p></div>
+ <div class="prep-grid">
+  <label><input type="checkbox" data-prep="transport"> 確認交通與班次</label>
+  <label><input type="checkbox" data-prep="stay"> 確認住宿與入住時間</label>
+  <label><input type="checkbox" data-prep="tickets"> 預約門票／活動</label>
+  <label><input type="checkbox" data-prep="weather"> 查看天氣與特殊公告</label>
+  <label><input type="checkbox" data-prep="essentials"> 準備證件、雨具與用品</label>
+ </div>
+ <div class="prep-bottom"><span id="prepProgress">已完成 0 / 5 項</span><button class="btn" id="prepReset" type="button">重設清單</button></div>
+</section>
+</main><footer>© 2026 Xuan Travel · 台灣旅遊地圖 ｜ 地圖資料 © OpenStreetMap contributors</footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>
+const places=[
+[1,'九份老街','新北市瑞芳區','文化','🏮',25.1096,121.8453,'山城巷弄、茶樓與海景交織的經典老街。'],
+[2,'淡水老街','新北市淡水區','景點','⛵',25.1697,121.4409,'河岸散步、老街小吃與夕陽景色。'],
+[3,'台北101','台北市信義區','景點','🏙️',25.0339,121.5645,'台北代表性地標與城市觀景地點。'],
+[4,'陽明山國家公園','台北市／新北市','自然','🌿',25.1667,121.5667,'火山地形、步道、花季與自然景觀。'],
+[5,'野柳地質公園','新北市萬里區','自然','🪨',25.2051,121.6905,'海蝕地形與奇岩景觀。'],
+[6,'十分瀑布','新北市平溪區','自然','💧',25.0413,121.7817,'瀑布步道與周邊山城風景。'],
+[7,'礁溪溫泉','宜蘭縣礁溪鄉','景點','♨️',24.8277,121.7742,'溫泉街、足湯與宜蘭慢旅行。'],
+[8,'太魯閣國家公園','花蓮縣秀林鄉','自然','⛰️',24.1558,121.6217,'峽谷與山岳地景；出發前請確認園區開放及道路管制。'],
+[9,'七星潭','花蓮縣新城鄉','海岸','🌊',24.0318,121.6305,'弧形海灣與太平洋海景，海邊請注意浪況。'],
+[10,'池上伯朗大道','台東縣池上鄉','自然','🌾',23.1218,121.2168,'稻田景觀與自行車旅行。'],
+[11,'三仙台','台東縣成功鎮','海岸','🌅',23.1258,121.4064,'海岸地形與跨海拱橋景觀。'],
+[12,'阿里山森林遊樂區','嘉義縣阿里山鄉','自然','🌲',23.5109,120.8056,'森林鐵路、森林步道與日出景觀。'],
+[13,'安平古堡','台南市安平區','文化','🏯',23.0017,120.1605,'台南歷史古蹟與安平老街周邊。'],
+[14,'赤崁樓','台南市中西區','文化','🏛️',22.9972,120.2024,'台南市區重要歷史古蹟。'],
+[15,'旗津老街','高雄市旗津區','美食','🦑',22.6127,120.2697,'海產小吃、渡輪與海岸風光。'],
+[16,'駁二藝術特區','高雄市鹽埕區','文化','🎨',22.6206,120.2817,'港灣倉庫群改造的藝文展演空間。'],
+[17,'墾丁大街','屏東縣恆春鎮','美食','🍢',21.9457,120.7986,'南國夜市與度假商圈。'],
+[18,'鵝鑾鼻公園','屏東縣恆春鎮','海岸','🌴',21.9039,120.8527,'台灣南端海岸景觀與燈塔。'],
+[19,'日月潭','南投縣魚池鄉','自然','🚣',23.8569,120.9150,'湖景、自行車道與環湖遊程。'],
+[20,'鹿港老街','彰化縣鹿港鎮','文化','🧧',24.0567,120.4338,'傳統街屋、廟宇與小吃文化。'],
+[21,'高美濕地','台中市清水區','自然','🦀',24.3117,120.5497,'濕地生態與夕陽景觀，請留意潮汐與木棧道開放時間。'],
+[22,'澎湖跨海大橋','澎湖縣白沙鄉','海岸','🌉',23.6454,119.5572,'澎湖代表性跨海景觀道路與海岸風景。']
+].map(x=>({id:x[0],name:x[1],city:x[2],cat:x[3],icon:x[4],lat:x[5],lng:x[6],desc:x[7]}));
+places.push(
+{id:23,name:'北投地熱谷',city:'台北市北投區',cat:'自然',icon:'♨️',lat:25.1377,lng:121.5089,desc:'火山地熱景觀與北投溫泉文化。'},
+{id:24,name:'平溪老街',city:'新北市平溪區',cat:'文化',icon:'🏮',lat:25.0258,lng:121.7383,desc:'鐵道山城、老街與天燈文化；請遵守現場施放規範。'},
+{id:25,name:'龜山島',city:'宜蘭縣頭城鎮外海',cat:'海岸',icon:'🐢',lat:24.8425,lng:121.9535,desc:'火山島與海上景觀，登島需依公告申請並確認船班。'},
+{id:26,name:'清水斷崖',city:'花蓮縣秀林鄉',cat:'海岸',icon:'🌊',lat:24.2268,lng:121.6850,desc:'山海相接的壯麗海岸景觀，請留意道路與天候管制。'},
+{id:27,name:'瑞穗牧場',city:'花蓮縣瑞穗鄉',cat:'自然',icon:'🐄',lat:23.4964,lng:121.3717,desc:'田園牧場風景與休閒體驗。'},
+{id:28,name:'鹿野高台',city:'台東縣鹿野鄉',cat:'自然',icon:'🪂',lat:22.9122,lng:121.1237,desc:'縱谷景觀與熱氣球活動場域，活動日期依官方公告。'},
+{id:29,name:'北港朝天宮',city:'雲林縣北港鎮',cat:'文化',icon:'🏮',lat:23.5675,lng:120.3025,desc:'重要信仰中心與北港老街文化。'},
+{id:30,name:'嘉義檜意森活村',city:'嘉義市東區',cat:'文化',icon:'🏡',lat:23.4851,lng:120.4512,desc:'日式木造宿舍群與林業文化展示。'},
+{id:31,name:'台中審計新村',city:'台中市西區',cat:'文化',icon:'🎨',lat:24.1448,lng:120.6635,desc:'老宿舍聚落改造的文創與散步空間。'},
+{id:32,name:'新竹城隍廟',city:'新竹市北區',cat:'美食',icon:'🍜',lat:24.8048,lng:120.9657,desc:'廟埕小吃與新竹市區歷史街區。'},
+{id:33,name:'桃園大溪老街',city:'桃園市大溪區',cat:'文化',icon:'🏘️',lat:24.8836,lng:121.2867,desc:'巴洛克立面街屋、木藝與傳統小吃。'},
+{id:34,name:'林本源園邸',city:'新北市板橋區',cat:'文化',icon:'🏯',lat:25.0100,lng:121.4558,desc:'台灣傳統園林建築與庭園景觀。'},
+{id:35,name:'三峽老街',city:'新北市三峽區',cat:'文化',icon:'🧱',lat:24.9340,lng:121.3688,desc:'紅磚拱廊街屋、祖師廟與地方小吃。'},
+{id:36,name:'溪頭自然教育園區',city:'南投縣鹿谷鄉',cat:'自然',icon:'🌲',lat:23.6745,lng:120.7958,desc:'森林步道、竹林與山林自然體驗。'},
+{id:37,name:'奇美博物館',city:'台南市仁德區',cat:'文化',icon:'🏛️',lat:22.9347,lng:120.2268,desc:'藝術、樂器與自然史典藏，參觀資訊依官方公告。'},
+{id:38,name:'衛武營國家藝術文化中心',city:'高雄市鳳山區',cat:'文化',icon:'🎭',lat:22.6252,lng:120.3424,desc:'表演藝術場館與大型公共綠地。'},
+{id:39,name:'佛光山佛陀紀念館',city:'高雄市大樹區',cat:'文化',icon:'🛕',lat:22.7539,lng:120.4462,desc:'大型文化與宗教建築園區，參訪規範依官方公告。'},
+{id:40,name:'小琉球花瓶岩',city:'屏東縣琉球鄉',cat:'海岸',icon:'🪸',lat:22.3405,lng:120.3695,desc:'小琉球代表性海蝕地形，請遵守潮間帶生態規範。'},
+{id:41,name:'綠島朝日溫泉',city:'台東縣綠島鄉',cat:'自然',icon:'♨️',lat:22.6402,lng:121.4935,desc:'海岸海底溫泉景觀，交通與營運狀況依公告。'},
+{id:42,name:'金門莒光樓',city:'金門縣金城鎮',cat:'文化',icon:'🏯',lat:24.4329,lng:118.3175,desc:'金門代表性歷史建築與觀景地點。'},
+{id:43,name:'馬祖芹壁聚落',city:'連江縣北竿鄉',cat:'文化',icon:'🏘️',lat:26.2257,lng:119.9864,desc:'閩東石頭屋聚落與海灣景觀。'},
+{id:44,name:'蘭嶼朗島部落',city:'台東縣蘭嶼鄉',cat:'文化',icon:'🛖',lat:22.0618,lng:121.5335,desc:'達悟族文化與海島聚落，參訪請尊重部落規範。'}
+);
+const map=L.map('map').setView([23.7,120.9],7);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
+const markers=L.layerGroup().addTo(map),routes=L.layerGroup().addTo(map);let cat='全部',region='全部',chosen=null,position=null,searchPin=null,favs=JSON.parse(localStorage.getItem('xuanTravelFavs')||'[]');
+const $=id=>document.getElementById(id),safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function showStats(){ $('catNow').textContent=cat;$('favCount').textContent=favs.length+' 個';}
+function render(){
+ markers.clearLayers();
+  const regionOf=p=>{const c=p.city||'';if(/澎湖|金門|連江|馬祖/.test(c))return '離島';if(/台北|新北|基隆|桃園|新竹|宜蘭/.test(c))return '北部';if(/台中|苗栗|彰化|南投|雲林|嘉義/.test(c))return '中部';if(/台南|高雄|屏東/.test(c))return '南部';if(/花蓮|台東/.test(c))return '東部';return '其他'};
+  let arr=places.filter(p=>(cat==='全部'||p.cat===cat)&&(region==='全部'||regionOf(p)===region));
+ arr.forEach(p=>L.marker([p.lat,p.lng]).addTo(markers).bindPopup(`<b>${p.icon} ${safe(p.name)}</b><br>${safe(p.city)}｜${safe(p.cat)}<br>${safe(p.desc)}`).on('click',()=>select(p,false)));
+ $('list').innerHTML=arr.map(p=>`<div class="place" data-id="${p.id}"><div class="ico">${p.icon}</div><div><b>${safe(p.name)}</b><small>${safe(p.city)} · ${p.cat}</small></div><span>›</span></div>`).join('');
+ document.querySelectorAll('.place').forEach(el=>el.onclick=()=>select(places.find(p=>p.id===+el.dataset.id),true));
+ $('count').textContent=places.length+' 個';$('listCount').textContent=arr.length+' 個地點';$('heading').textContent=cat==='全部'?'推薦景點':cat+'地點';showStats();
+}
+function select(p,zoom=true){chosen=p;$('detail').classList.add('show');$('dName').textContent=p.icon+' '+p.name;$('dDesc').textContent=p.city+'｜'+p.cat+'｜'+p.desc;$('fav').textContent=favs.includes(p.id)?'♥ 已收藏':'♡ 加入收藏';if(zoom){map.setView([p.lat,p.lng],13);markers.eachLayer(m=>{let ll=m.getLatLng();if(ll.lat===p.lat&&ll.lng===p.lng)m.openPopup()})}}
+document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{cat=b.dataset.cat;document.querySelectorAll('[data-cat]').forEach(x=>x.classList.toggle('active',x===b));render()});
+ $('regionFilter').onchange=e=>{region=e.target.value;render()};
+$('fav').onclick=()=>{if(!chosen)return;favs=favs.includes(chosen.id)?favs.filter(x=>x!==chosen.id):[...favs,chosen.id];localStorage.setItem('xuanTravelFavs',JSON.stringify(favs));$('fav').textContent=favs.includes(chosen.id)?'♥ 已收藏':'♡ 加入收藏';showStats()};
+$('favTop').onclick=()=>{let a=places.filter(p=>favs.includes(p.id));$('heading').textContent='我的收藏';$('listCount').textContent=a.length+' 個地點';$('list').innerHTML=a.length?a.map(p=>`<div class="place" data-id="${p.id}"><div class="ico">${p.icon}</div><div><b>${safe(p.name)}</b><small>${safe(p.city)}</small></div></div>`).join(''):'<p style="font-size:12px;color:#71817b">尚未收藏景點。</p>';document.querySelectorAll('.place').forEach(el=>el.onclick=()=>select(places.find(p=>p.id===+el.dataset.id),true))};
+$('fit').onclick=()=>map.fitBounds([[21.7,119.2],[25.5,122.2]],{padding:[18,18]});$('full').onclick=()=>{$('mapPanel').classList.toggle('fullscreen');setTimeout(()=>map.invalidateSize(),180)};
+$('locate').onclick=()=>{if(!navigator.geolocation)return alert('瀏覽器不支援定位');navigator.geolocation.getCurrentPosition(p=>{position=[p.coords.latitude,p.coords.longitude];L.circleMarker(position,{radius:8,color:'#fff',weight:3,fillColor:'#2676d2',fillOpacity:1}).addTo(routes).bindPopup('目前位置').openPopup();map.setView(position,13)},()=>alert('無法取得位置，請確認定位權限'))};
+$('external').onclick=()=>{if(chosen)window.open(`https://www.google.com/maps/search/?api=1&query=${chosen.lat},${chosen.lng}`,'_blank')};
+$('route').onclick=async()=>{if(!chosen)return;if(!position){$('routeText').textContent='請先按「我​​的位置」允許定位。';return}$('routeText').textContent='正在規劃路線…';routes.clearLayers();try{let [a,b]=position;let r=await fetch(`https://router.project-osrm.org/route/v1/driving/${b},${a};${chosen.lng},${chosen.lat}?overview=full&geometries=geojson`);if(!r.ok)throw Error('路線服務暫時無法使用');let d=await r.json(),v=d.routes?.[0];if(!v)throw Error('找不到路線');L.geoJSON(v.geometry,{style:{color:'#16765b',weight:5}}).addTo(routes);map.fitBounds(L.geoJSON(v.geometry).getBounds(),{padding:[20,20]});$('routeText').textContent=`${chosen.name}｜約 ${(v.distance/1000).toFixed(1)} 公里，開車約 ${Math.round(v.duration/60)} 分鐘。實際路況請以現場資訊為準。`}catch(e){$('routeText').textContent='目前無法取得路線：'+e.message+'。可使用外部地圖導航。'}};
+$('clear').onclick=()=>{routes.clearLayers();$('routeText').textContent='路線已清除。'};
+async function search(){let q=$('query').value.trim();if(!q)return;$('foot').textContent='搜尋中…';try{let r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=zh-TW&q='+encodeURIComponent(q));if(!r.ok)throw Error('搜尋服務暫時無法使用');let a=await r.json();if(!a.length){$('foot').textContent='找不到搜尋結果，請更換關鍵字。';return}let x=a[0];if(searchPin)map.removeLayer(searchPin);searchPin=L.marker([+x.lat,+x.lon]).addTo(map).bindPopup(`<b>${safe(x.name||q)}</b><br>${safe(x.display_name)}`).openPopup();map.setView([+x.lat,+x.lon],14);$('foot').textContent='搜尋結果：'+x.display_name+'｜OpenStreetMap Nominatim。'}catch(e){$('foot').textContent='搜尋失敗：'+e.message}}
+$('search').onclick=search;$('query').onkeydown=e=>{if(e.key==='Enter')search()};
+let trip=JSON.parse(localStorage.getItem('xuanTravelTrip')||'[]');
+const themes={north:[1,6,5,2],central:[19,12,21,36],south:[13,14,16,15,37],east:[9,8,10,11,28]};
+function renderTrip(){
+ $('tripCount').textContent=trip.length+' 個景點';
+ $('itinerary').innerHTML=trip.length?trip.map((id,i)=>{let p=places.find(x=>x.id===id);return p?'<div class="trip-stop"><b style="color:#8ca69a;font-size:10px">'+(i+1)+'</b><div class="stop-name">'+p.icon+' '+safe(p.name)+'<small>'+safe(p.city)+'</small></div><button data-up="'+i+'" '+(i===0?'disabled':'')+' aria-label="上移">↑</button><button data-down="'+i+'" '+(i===trip.length-1?'disabled':'')+' aria-label="下移">↓</button><button data-remove="'+id+'">移除</button></div>':''}).join(''):'<small style="color:#71817b">尚未加入景點。可從景點詳細資訊加入，或選擇主題旅程。</small>';
+ document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{trip=trip.filter(x=>x!==+b.dataset.remove);saveTrip()});
+ document.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{let i=+b.dataset.up;if(i>0){[trip[i-1],trip[i]]=[trip[i],trip[i-1]];saveTrip()}});
+ document.querySelectorAll('[data-down]').forEach(b=>b.onclick=()=>{let i=+b.dataset.down;if(i<trip.length-1){[trip[i+1],trip[i]]=[trip[i],trip[i+1]];saveTrip()}});
+}
+function saveTrip(){localStorage.setItem('xuanTravelTrip',JSON.stringify(trip));renderTrip()}
+$('addTrip').onclick=()=>{if(!chosen)return;if(!trip.includes(chosen.id)){trip.push(chosen.id);saveTrip();$('addTrip').textContent='✓ 已加入';setTimeout(()=>$('addTrip').textContent='＋ 加入行程',1300)}else{$('routeText').textContent='這個景點已在行程清單中。'}};
+document.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>{trip=themes[b.dataset.theme].filter(id=>places.some(p=>p.id===id));saveTrip();$('itinerary').scrollIntoView({behavior:'smooth',block:'center'})});
+$('tripCopy').onclick=async()=>{if(!trip.length){$('routeText').textContent='請先加入景點。';return}let s='Xuan Travel｜我的台灣旅遊行程\n'+trip.map((id,i)=>{let p=places.find(x=>x.id===id);return (i+1)+'. '+p.name+'（'+p.city+'）'}).join('\n');try{await navigator.clipboard.writeText(s);$('tripCopy').textContent='已複製！';setTimeout(()=>$('tripCopy').textContent='複製行程',1400)}catch(e){$('routeText').textContent=s}};
+$('tripMap').onclick=()=>{if(!trip.length){$('routeText').textContent='請先加入景點。';return}let ps=trip.map(id=>places.find(p=>p.id===id)).filter(Boolean);let origin=position?position[0]+','+position[1]:ps[0].lat+','+ps[0].lng;let dest=ps[ps.length-1];let way=ps.slice(position?0:1,-1).map(p=>p.lat+','+p.lng).join('|');let url='https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(origin)+'&destination='+dest.lat+','+dest.lng+'&travelmode=driving'+(way?'&waypoints='+encodeURIComponent(way):'');window.open(url,'_blank')};
+$('tripClear').onclick=()=>{trip=[];saveTrip()};
+
+/* Homepage quick search and destination shortcuts */
+const homeSearch=()=>{const q=$('homeQuery').value.trim();$('query').value=q;$('mapPanel').scrollIntoView({behavior:'smooth',block:'start'});if(q)setTimeout(search,350)};
+$('homeSearch').onclick=homeSearch;
+$('homeQuery').onkeydown=e=>{if(e.key==='Enter')homeSearch()};
+document.querySelectorAll('[data-jump-search]').forEach(a=>a.addEventListener('click',()=>{$('query').value=a.dataset.jumpSearch;setTimeout(search,350)}));
+
+const prepKey='xuanTravelPrepChecklist';
+let prepState={};try{prepState=JSON.parse(localStorage.getItem(prepKey)||'{}')||{}}catch(e){prepState={}}
+function renderPrep(){
+ const boxes=[...document.querySelectorAll('[data-prep]')];
+ boxes.forEach(box=>box.checked=!!prepState[box.dataset.prep]);
+ const done=boxes.filter(box=>box.checked).length;
+ $('prepProgress').textContent='已完成 '+done+' / '+boxes.length+' 項';
+}
+document.querySelectorAll('[data-prep]').forEach(box=>box.addEventListener('change',()=>{
+ prepState[box.dataset.prep]=box.checked;localStorage.setItem(prepKey,JSON.stringify(prepState));renderPrep();
+}));
+$('prepReset').onclick=()=>{prepState={};localStorage.removeItem(prepKey);renderPrep()};
+render();renderTrip();renderPrep();map.fitBounds([[21.7,119.2],[25.5,122.2]],{padding:[18,18]});
+</script></body></html>
